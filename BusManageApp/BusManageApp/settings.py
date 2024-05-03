@@ -37,7 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'BusManage.apps.BusmanageConfig',
+    'BusManage.apps.BusManageConfig',
+    'ckeditor',
+    'ckeditor_uploader',
+    'rest_framework',
+    'oauth2_provider',
 ]
 
 MIDDLEWARE = [
@@ -85,6 +89,24 @@ DATABASES = {
     }
 }
 
+CLIENT_ID = '0sLQvmDW6g4gKx9j4WhWrv1Z6ko9nq46KU8EJEDU'
+CLIENT_SECRET = 'IwsqhlOCOnJRl2YG5FdPKwHRUersCXyDdtspArNzfpIqsNtw4DleaXrqHhGT2LyeoV2U3QIxZN4EPWIQBFan4Z5xNC02xY6NraUWkC7EREs68t5nTBN0ZoPpd5Grl33Y'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 2,
+    'DEFAULT_AUTHENTICATION_CLASSES': ( 'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+) }
+
+import cloudinary
+
+cloudinary.config(
+    cloud_name="dx9aknvnz",
+    api_key="853573281637597",
+    api_secret="tlIQH3E4bQ3TM1XhLh2GqGpJNeA"
+)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -104,7 +126,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODE = 'BusManage.User'
+AUTH_USER_MODEL = 'BusManage.User'
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -121,6 +143,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_ROOT = '%s/BusManage/static/' % BASE_DIR
+CKEDITOR_UPLOAD_PATH = "ckeditor/images/"
+CLOUDINARY_URL = "cloudinary://853573281637597:tlIQH3E4bQ3TM1XhLh2GqGpJNeA@dx9aknvnz"
+
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
