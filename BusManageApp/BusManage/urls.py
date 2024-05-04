@@ -7,6 +7,11 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 router.register('bus-company', views.BusCompanyViewSet)
 router.register('user', views.UserViewSet)
+router.register('ticket', views.TicketViewSet)
+router.register('delivery', views.DeliveryViewSet)
+router.register('revenue-statistics', views.RevenueStatisticsViewSet)
+router.register('bus-route', views.BusRouteViewSet)
+router.register('trip', views.TripViewSet)
 urlpatterns = [
     # path('', views.index, name="index"),
     path('', include(router.urls)),

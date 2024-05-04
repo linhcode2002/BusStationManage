@@ -1,4 +1,5 @@
 from cloudinary.models import CloudinaryField
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from ckeditor.fields import RichTextField
@@ -27,7 +28,7 @@ class UserRole(BaseModel):
 class BusCompany(BaseModel):
     name = models.CharField(max_length=100)
     admin_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='admin_of_company')
-    avatar = models.ImageField(upload_to='companyAvatars/', null=True, blank=True)
+    avatar = CloudinaryField('avatar', null=True, folder="BusAvatars")
     description = RichTextField()
 
 
@@ -70,7 +71,14 @@ class Delivery(BaseModel):
 class Review(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     bus_company = models.ForeignKey(BusCompany, on_delete=models.CASCADE)
-    rating = models.IntegerField()
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)], null=True, blank=True)
+
+    class Meta:
+        unique_together = ('user', 'bus_company')
+
+class Comments(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    bus_company = models.ForeignKey(BusCompany, on_delete=models.CASCADE)
     comment = models.TextField()
 
 
@@ -80,3 +88,11 @@ class RevenueStatistics(BaseModel):
     year = models.IntegerField()
     revenue = models.DecimalField(max_digits=15, decimal_places=2)
     frequency = models.IntegerField()
+
+class Like(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.RESTRICT, null=False)
+    bus_company = models.ForeignKey(BusCompany, on_delete=models.RESTRICT, null=False)
+    active = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('user', 'bus_company')
