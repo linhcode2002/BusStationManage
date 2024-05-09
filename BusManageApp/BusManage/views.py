@@ -9,6 +9,7 @@ from .models import *
 from .perms import *
 from .serializer import *
 from rest_framework.response import Response
+from django.contrib.auth.hashers import check_password
 
 
 class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView,
@@ -83,7 +84,7 @@ class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListA
 
         # API sửa và xóa cho like, comment và review
 
-    @action(methods=['put'], url_path='comments/(?P<comment_id>[^/.]+)/update', detail=True,
+    @action(methods=['patch'], url_path='comments/(?P<comment_id>[^/.]+)/update', detail=True,
             permission_classes=[IsAuthenticated])
     def update_comment(self, request, pk, comment_id):
         comment = get_object_or_404(Comments, pk=comment_id)
@@ -108,7 +109,7 @@ class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListA
         else:
             return Response({"message": "Bạn không có quyền xóa bình luận này."}, status=status.HTTP_403_FORBIDDEN)
 
-    @action(methods=['put'], url_path='reviews/(?P<review_id>[^/.]+)/update', detail=True,
+    @action(methods=['patch'], url_path='reviews/(?P<review_id>[^/.]+)/update', detail=True,
             permission_classes=[IsAuthenticated])
     def update_review(self, request, pk, review_id):
         review = get_object_or_404(Review, pk=review_id)
@@ -138,17 +139,53 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
     serializer_class = UserSerializer
     parser_classes = [MultiPartParser]
 
-    # def get_permissions(self):
-    #     if self.action == 'retrieve':
-    #         return [permissions.IsAuthenticated]
-    #
-    #     return [permissions.AllowAny]
+    def get_permissions(self):
+        if self.action == 'retrieve':
+            return [IsAuthenticated()]
 
-    #user/current_user/
-    @action(methods=['get'], url_name='current', detail=False)
+        return [AllowAny()]
+
+    # user/current_user/
+    @action(methods=['get'], url_name='current', detail=False, url_path='current-user')
     def current_user(self, request):
-        return Response(UserSerializer(request.user).data)
+        if request.user.is_authenticated:
+            serializer = UserSerializer(request.user)
+            return Response(serializer.data)
+        else:
+            return Response({'error': 'Vui lòng đăng nhập để xem thông tin!'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
+    # user/change_password/
+    @action(methods=['post'], url_name='change_password', detail=False, url_path='change-password')
+    def change_password(self, request):
+        user = request.user
+
+        # Kiểm tra mật khẩu cũ
+        old_password = request.data.get('old_password')
+        if not old_password or not check_password(old_password, user.password):
+            return Response({'error': 'Mật khẩu cũ không chính xác!'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Kiểm tra và cập nhật mật khẩu mới
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+        if new_password != confirm_password:
+            return Response({'error': 'Mật khẩu mới và mật khẩu xác nhận không khớp!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({'success': 'Mật khẩu đã được thay đổi thành công!'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['patch'], url_path='change-profile')
+    def change_profile(self, request):
+        user = request.user
+        serializer = self.serializer_class(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
@@ -165,13 +202,31 @@ class RevenueStatisticsViewSet(viewsets.ModelViewSet):
     serializer_class = RevenueStatisticsSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class BusRouteViewSet(viewsets.ModelViewSet):
-    queryset = BusRoute.objects.all()
+class BusRouteViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView, generics.RetrieveAPIView,
+                      generics.UpdateAPIView, generics.DestroyAPIView):
+    queryset = BusRoute.objects.filter(active=True)
     serializer_class = BusRouteSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsBusCompany]
 
+    def get_permissions(self):
+        if self.action == 'create':
+            permission_classes = [permissions.IsAuthenticated, IsBusCompany]
+        elif self.action == 'update':
+            permission_classes = [permissions.IsAuthenticated, CanEditBusRoute]
+        else:
+            permission_classes = [permissions.AllowAny]
+        return [permission() for permission in permission_classes]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if CanEditBusRoute().has_object_permission(request, self, instance):
+            instance.active = False
+            instance.save()
+            return Response({"message": "Xóa tuyến xe thành công."},status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Bạn không có quyền xóa tuyến xe."}, status=status.HTTP_403_FORBIDDEN)
 
 class TripViewSet(viewsets.ModelViewSet):
-    queryset = Trip.objects.all()
+    queryset = Trip.objects.filter(active=True)
     serializer_class = TripSerializer
     permission_classes = [permissions.IsAuthenticated]

@@ -18,6 +18,11 @@ class IsUser(BasePermission):
     def has_permission(self, request, view):
         return request.user.groups.filter(name='user').exists()
 
+class CanEditBusRoute(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.user.groups.filter(name='bus_company').exists():
+            return obj.bus_company.admin_user == request.user
+        return False
 class IsBusCompanyOrReadOnly(BasePermission):
     def has_permission(self, request, view):
         # Không cần đăng nhập vẫn có thể xem buscompany, like, comment

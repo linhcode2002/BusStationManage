@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, ValidationError, PrimaryKeyRelatedField
 from .models import *
 
 class BusCompanySerializer(ModelSerializer):
@@ -11,9 +11,8 @@ class UserSerializer(ModelSerializer):
         model = User
         fields = ['first_name', 'last_name', 'username', 'password', 'email', 'avatar']
         extra_kwargs = {
-            'password': {
-                'write_only': True
-            }
+            'password': {'write_only': True},
+            'username': {'read_only': True}
         }
     def create(self, validated_data):
         data = validated_data.copy()
@@ -21,6 +20,10 @@ class UserSerializer(ModelSerializer):
         user.set_password(data['password'])
         user.save()
         return user
+
+    def update(self, instance, validated_data):
+        validated_data.pop('username', None)  # Xóa trường 'username' khỏi validated_data để đảm bảo không thay đổi
+        return super().update(instance, validated_data)
 
 class TicketSerializer(ModelSerializer):
     class Meta:
@@ -69,9 +72,24 @@ class UserRoleSerializer(ModelSerializer):
 
 
 class BusRouteSerializer(ModelSerializer):
+    bus_company = PrimaryKeyRelatedField(source='bus_company.id', read_only=True)
     class Meta:
         model = BusRoute
-        fields = '__all__'
+        fields = ['id', 'bus_company', 'route_name', 'start_location', 'end_location']
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        if user.groups.filter(name='bus_company').exists():
+            return super().create(validated_data)
+        else:
+            raise ValidationError("Bạn không có quyền tạo tuyến xe.")
+
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        if user.groups.filter(name='bus_company').exists() and instance.bus_company.admin_user == user:
+            return super().update(instance, validated_data)
+        else:
+            raise ValidationError("Bạn không có quyền sửa tuyến xe.")
 
 
 class TripSerializer(ModelSerializer):

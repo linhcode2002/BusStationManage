@@ -38,7 +38,6 @@ class BusRoute(BaseModel):
     route_name = models.CharField(max_length=100)
     start_location = models.CharField(max_length=100)
     end_location = models.CharField(max_length=100)
-    avatar = models.ImageField(upload_to='route_avatars/', null=True, blank=True)
 
 
 class Trip(BaseModel):
