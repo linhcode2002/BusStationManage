@@ -1,3 +1,4 @@
+from django.db.models import BooleanField
 from rest_framework.serializers import ModelSerializer, ValidationError, PrimaryKeyRelatedField
 from .models import *
 
@@ -24,11 +25,6 @@ class UserSerializer(ModelSerializer):
     def update(self, instance, validated_data):
         validated_data.pop('username', None)  # Xóa trường 'username' khỏi validated_data để đảm bảo không thay đổi
         return super().update(instance, validated_data)
-
-class TicketSerializer(ModelSerializer):
-    class Meta:
-        model = Ticket
-        fields = '__all__'
 
 
 class DeliverySerializer(ModelSerializer):
@@ -72,7 +68,7 @@ class UserRoleSerializer(ModelSerializer):
 
 
 class BusRouteSerializer(ModelSerializer):
-    bus_company = PrimaryKeyRelatedField(source='bus_company.id', read_only=True)
+    bus_company = PrimaryKeyRelatedField(queryset=BusCompany.objects.all())
     class Meta:
         model = BusRoute
         fields = ['id', 'bus_company', 'route_name', 'start_location', 'end_location']
@@ -93,6 +89,25 @@ class BusRouteSerializer(ModelSerializer):
 
 
 class TripSerializer(ModelSerializer):
+    bus_route = PrimaryKeyRelatedField(queryset=BusRoute.objects.all())
+    bus_company = BusCompanySerializer()
     class Meta:
         model = Trip
         fields = '__all__'
+
+
+class TicketSerializer(ModelSerializer):
+    trip = PrimaryKeyRelatedField(queryset=Trip.objects.all())
+    class Meta:
+        model = Ticket
+        fields = '__all__'
+
+class UserTicketSerializer(ModelSerializer):
+    ticket = PrimaryKeyRelatedField(queryset=Ticket.objects.all())
+    user = PrimaryKeyRelatedField(queryset=User.objects.all())
+    class Meta:
+        model = UserTicket
+        fields = ['id', 'user', 'active', 'payment_status', 'is_online_booking', 'quantity', 'ticket', 'total_price']
+        extra_kwargs = {
+            'total_price': {'read_only': True}
+        }

@@ -12,9 +12,11 @@ router.register('delivery', views.DeliveryViewSet)
 router.register('revenue-statistics', views.RevenueStatisticsViewSet)
 router.register('bus-route', views.BusRouteViewSet)
 router.register('trip', views.TripViewSet)
+router.register('user-ticket', views.UserTicketViewSet)
 urlpatterns = [
     # path('', views.index, name="index"),
     path('', include(router.urls)),
     path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     path('admin/', admin_site.urls),
+    path('search-trip/', views.TripViewSet.as_view({'get': 'search_trip'}), name='search-trip'),
 ]

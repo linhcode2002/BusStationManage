@@ -81,6 +81,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'BusManageApp.wsgi.application'
 
+from django.utils import timezone
+
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
+USE_TZ = True
+
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -103,7 +108,7 @@ CLIENT_SECRET = '3lRV8xvZMiCQYgOiP9umz4Qi8chD2eByi0BppGR43LWttjKKwpSv8Ql7ada4p9w
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 2,
-    'DEFAULT_AUTHENTICATION_CLASSES': ( 'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+    'DEFAULT_AUTHENTICATION_CLASSES': ('oauth2_provider.contrib.rest_framework.OAuth2Authentication',
 ) }
 
 import cloudinary
@@ -149,6 +154,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
+STATIC_ROOT = '/home/linhhv/BusStationManageApp/static/'
 STATIC_URL = 'static/'
 MEDIA_ROOT = '%s/BusManage/static/' % BASE_DIR
 CKEDITOR_UPLOAD_PATH = "ckeditor/images/"

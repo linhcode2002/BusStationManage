@@ -3,6 +3,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from ckeditor.fields import RichTextField
+from django.db.models import F, ExpressionWrapper, DecimalField
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
 
 class User(AbstractUser):
     avatar = CloudinaryField('avatar', null=True, folder="avatars")
@@ -42,18 +46,28 @@ class BusRoute(BaseModel):
 
 class Trip(BaseModel):
     bus_route = models.ForeignKey(BusRoute, on_delete=models.CASCADE)
+    bus_company = models.ForeignKey(BusCompany, on_delete=models.CASCADE, default=1)
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
     ticket_price = models.DecimalField(max_digits=10, decimal_places=2)
 
-
 class Ticket(BaseModel):
-    trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, unique=True)
+    total_seats = models.IntegerField(default=0)  # Tổng số lượng ghế trong chuyến
+    remaining_seats = models.IntegerField(default=0)  # Số lượng vé còn lại trong chuyến
+
+class UserTicket(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    payment_method = models.CharField(max_length=50)
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, default=None)
     payment_status = models.BooleanField(default=False)
     is_online_booking = models.BooleanField(default=False)
+    quantity = models.PositiveIntegerField(default=1)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2,
+                                      default=0)
 
+    def save(self, *args, **kwargs):
+        self.total_price = self.quantity * self.ticket.trip.ticket_price
+        super().save(*args, **kwargs)
 
 class Delivery(BaseModel):
     sender_name = models.CharField(max_length=100)
@@ -66,6 +80,7 @@ class Delivery(BaseModel):
     pickup_time = models.DateTimeField()
     delivery_status = models.CharField(max_length=50)
     bus_company = models.ForeignKey(BusCompany, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
 
 class Review(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

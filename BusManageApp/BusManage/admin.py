@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.hashers import make_password
 from django.template.response import TemplateResponse
 from django.contrib.auth.models import Permission, Group
 from .models import *
@@ -7,19 +8,34 @@ from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django import forms
 from django.urls import path
 
-# Register your models here.
 
+# Register your models here.
+class UserAdminForm(forms.ModelForm):
+    reset_password = forms.CharField(label='Reset Password', widget=forms.PasswordInput, required=False)
+
+    class Meta:
+        model = User
+        fields = '__all__'
 class UserAdmin(admin.ModelAdmin):
     list_display = ['id', 'username', 'first_name', 'first_name', 'last_name', 'email', 'is_active']
     search_fields = ['username', 'first_name', 'first_name', 'last_name', 'email']
     list_filter = ['is_active']
     readonly_fields = ["image"]
+    form = UserAdminForm
 
     def image(self, obj):
         if obj:
             return mark_safe(
                 "<img src='{url}' width='120' />".format(url=obj.avatar.url)
             )
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:  # If the object is being created
+            obj.password = make_password(form.cleaned_data['password'])
+        reset_password = form.cleaned_data.get('reset_password')
+        if reset_password:  # Nếu người dùng nhập mật khẩu mới
+            obj.password = make_password(reset_password)
+        super().save_model(request, obj, form, change)
 class BusCompanyForm(forms.ModelForm):
     description = forms.CharField(widget=CKEditorUploadingWidget)
 
@@ -100,9 +116,9 @@ class TripAdmin(admin.ModelAdmin):
     list_filter = ['bus_route']
 
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ['id', 'trip', 'user', 'payment_method', 'payment_status', 'is_online_booking']
+    list_display = ['id', 'trip', 'active', 'created_date', 'updated_date', 'remaining_seats', 'total_seats']
     search_fields = ['trip__bus_route__route_name', 'user__username']
-    list_filter = ['payment_status', 'is_online_booking']
+    list_filter = ['remaining_seats', 'total_seats', 'active']
 
 class DeliveryAdmin(admin.ModelAdmin):
     list_display = ['id', 'sender_name', 'receiver_name', 'delivery_time', 'pickup_time', 'delivery_status', 'bus_company']
@@ -128,6 +144,11 @@ class LikeAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'bus_company__name']
     list_filter = ['active']
 
+class UserTicketAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'active', 'payment_status', 'is_online_booking', 'quantity', 'ticket', 'total_price']
+    search_fields = ['payment_status', 'quantity']
+    list_filter = ['active']
+
 
 admin_site = BusManageAdminSite('mybusmanage')
 
@@ -143,3 +164,4 @@ admin_site.register(RevenueStatistics, RevenueStatisticsAdmin)
 admin_site.register(Like, LikeAdmin)
 admin_site.register(Permission)
 admin_site.register(Group)
+admin_site.register(UserTicket, UserTicketAdmin)
