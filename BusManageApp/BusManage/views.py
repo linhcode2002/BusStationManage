@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from . import perms
 from .models import *
 from .perms import *
+from django.db.models import Q
 from .serializer import *
 from rest_framework.response import Response
 from django.contrib.auth.hashers import check_password
@@ -136,6 +137,21 @@ class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListA
         else:
             return Response({"message": "Bạn không có quyền xóa đánh giá này."}, status=status.HTTP_403_FORBIDDEN)
 
+
+    # Chú ý truyền theo params
+    @action(methods=['get'], url_path='search', detail=False)
+    def search_bus_companies(self, request):
+        # Lấy từ khóa tìm kiếm từ tham số truy vấn
+        keyword = request.GET.get('keyword', '')
+
+        # Tìm kiếm tất cả các nhà xe có tên gần giống với từ khóa
+        bus_companies = BusCompany.objects.filter(
+            Q(name__icontains=keyword) |  # Tìm theo tên nhà xe
+            Q(description__icontains=keyword)  # Tìm theo mô tả
+        ).distinct()  # Lọc bỏ các bản ghi trùng lặp
+
+        serializer = BusCompanySerializer(bus_companies, many=True)
+        return Response(serializer.data)
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
