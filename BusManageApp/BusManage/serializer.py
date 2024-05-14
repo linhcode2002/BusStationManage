@@ -13,7 +13,6 @@ class UserSerializer(ModelSerializer):
         fields = ['first_name', 'last_name', 'username', 'password', 'email', 'avatar']
         extra_kwargs = {
             'password': {'write_only': True},
-            'username': {'read_only': True}
         }
     def create(self, validated_data):
         data = validated_data.copy()
@@ -89,7 +88,7 @@ class BusRouteSerializer(ModelSerializer):
 
 
 class TripSerializer(ModelSerializer):
-    bus_route = PrimaryKeyRelatedField(queryset=BusRoute.objects.all())
+    bus_route = BusRouteSerializer()
     bus_company = BusCompanySerializer()
     class Meta:
         model = Trip

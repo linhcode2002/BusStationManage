@@ -313,7 +313,8 @@ class TripViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView
             return [permission() for permission in self.permission_classes]
 
     def list(self, request):
-        serializer = self.serializer_class(self.queryset, many=True)
+        queryset = self.get_queryset()
+        serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
