@@ -11,7 +11,7 @@ from django.db.models import Q
 from .serializer import *
 from rest_framework.response import Response
 from django.contrib.auth.hashers import check_password
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from django.utils import timezone
 
 
@@ -224,6 +224,17 @@ class DeliveryViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPI
     def create(self, request):
         user = request.user
         request.data['user'] = user.id
+
+        # Lấy thời gian hiện tại
+        current_time = timezone.now()
+
+        # Thiết lập delivery_time và pickup_time
+        request.data['delivery_time'] = current_time
+
+        # Tính toán pickup_time
+        pickup_time = current_time + timedelta(days=10)
+        request.data['pickup_time'] = pickup_time
+
         serializer = DeliverySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
