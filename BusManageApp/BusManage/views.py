@@ -15,6 +15,10 @@ from datetime import datetime, date, timedelta
 from django.utils import timezone
 
 
+def home(request):
+    return render(request, 'website/home.html', {})
+
+
 class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView,
                         generics.RetrieveAPIView):
     queryset = BusCompany.objects.filter(active=True)
@@ -34,6 +38,7 @@ class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListA
         except KeyError:
             # Nếu không có phân quyền được định nghĩa cho hành động này, trả về phân quyền mặc định
             return [permission() for permission in self.permission_classes]
+
     @action(methods=['post'], url_path='comments', detail=True, permission_classes=[IsAuthenticated])
     def add_comment(self, request, pk):
         bus_company = self.get_object()
@@ -100,6 +105,7 @@ class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListA
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(methods=['delete'], url_path='comments/(?P<comment_id>[^/.]+)', detail=True,
             permission_classes=[IsAuthenticated])
     def delete_comment(self, request, pk, comment_id):
@@ -126,7 +132,8 @@ class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListA
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['delete'], url_path='reviews/(?P<review_id>[^/.]+)', detail=True, permission_classes=[IsAuthenticated])
+    @action(methods=['delete'], url_path='reviews/(?P<review_id>[^/.]+)', detail=True,
+            permission_classes=[IsAuthenticated])
     def delete_review(self, request, pk, review_id):
         review = get_object_or_404(Review, pk=review_id)
         if review.user == request.user:
@@ -136,7 +143,6 @@ class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListA
                             status=status.HTTP_200_OK)
         else:
             return Response({"message": "Bạn không có quyền xóa đánh giá này."}, status=status.HTTP_403_FORBIDDEN)
-
 
     # Chú ý truyền theo params
     @action(methods=['get'], url_path='search', detail=False)
@@ -152,6 +158,8 @@ class BusCompanyViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListA
 
         serializer = BusCompanySerializer(bus_companies, many=True)
         return Response(serializer.data)
+
+
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
@@ -171,7 +179,6 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
             return Response(serializer.data)
         else:
             return Response({'error': 'Vui lòng đăng nhập để xem thông tin!'}, status=status.HTTP_401_UNAUTHORIZED)
-
 
     # user/change_password/
     @action(methods=['post'], url_name='change_password', detail=False, url_path='change-password')
@@ -204,6 +211,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class DeliveryViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView, generics.RetrieveAPIView):
     queryset = Delivery.objects.filter(active=True)
@@ -239,6 +247,7 @@ class DeliveryViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPI
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     def retrieve(self, request, pk):
         user = request.user
 
@@ -275,10 +284,13 @@ class DeliveryViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPI
 
         serializer = DeliverySerializer(delivery)
         return Response(serializer.data)
+
+
 class RevenueStatisticsViewSet(viewsets.ModelViewSet):
     queryset = RevenueStatistics.objects.all()
     serializer_class = RevenueStatisticsSerializer
     permission_classes = [permissions.IsAuthenticated]
+
 
 class BusRouteViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView, generics.RetrieveAPIView,
                       generics.UpdateAPIView, generics.DestroyAPIView):
@@ -304,8 +316,9 @@ class BusRouteViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPI
         else:
             return Response({"message": "Bạn không có quyền xóa tuyến xe."}, status=status.HTTP_403_FORBIDDEN)
 
+
 class TripViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView, generics.RetrieveAPIView,
-                      generics.UpdateAPIView, generics.DestroyAPIView):
+                  generics.UpdateAPIView, generics.DestroyAPIView):
     queryset = Trip.objects.filter(active=True)
     serializer_class = TripSerializer
     permission_classes_by_action = {
@@ -342,6 +355,7 @@ class TripViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView
             serializer.save()
             return Response({"message": "Chuyến xe đã được tạo thành công."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def retrieve(self, request, pk=None):
         trip = self.queryset.filter(pk=pk).first()
         if trip:
@@ -383,7 +397,7 @@ class TripViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView
             if request.user != trip.bus_company.admin_user:
                 return Response({"message": "Bạn không có quyền cập nhật chuyến xe này."},
                                 status=status.HTTP_403_FORBIDDEN)
-            trip.active=False
+            trip.active = False
             trip.save()
             return Response({"message": "Chuyến xe đã được xóa thành công."}, status=status.HTTP_204_NO_CONTENT)
         return Response({"message": "Xóa chuyến xe thất bại!"}, status=status.HTTP_404_NOT_FOUND)
@@ -418,7 +432,7 @@ class TripViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView
 
 
 class TicketViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView, generics.RetrieveAPIView,
-                      generics.UpdateAPIView, generics.DestroyAPIView):
+                    generics.UpdateAPIView, generics.DestroyAPIView):
     queryset = Ticket.objects.filter(active=True)
     serializer_class = TicketSerializer
     permission_classes_by_action = {
@@ -453,10 +467,12 @@ class TicketViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIVi
             if request.user != ticket.trip.bus_company.admin_user:
                 return Response({"message": "Bạn không có quyền cập nhật vé xe này."},
                                 status=status.HTTP_403_FORBIDDEN)
-            ticket.active=False
+            ticket.active = False
             ticket.save()
             return Response({"message": "Vé xe đã được xóa thành công."}, status=status.HTTP_204_NO_CONTENT)
         return Response({"message": "Xóa vé xe thất bại!"}, status=status.HTTP_404_NOT_FOUND)
+
+
 class UserTicketViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView, generics.RetrieveAPIView):
     queryset = UserTicket.objects.all()
     serializer_class = UserTicketSerializer
@@ -473,6 +489,7 @@ class UserTicketViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateA
         except KeyError:
             # action is not set, return default permission_classes
             return [permission() for permission in self.permission_classes]
+
     def create(self, request):
         user = request.user
         ticket_id = request.data.get('ticket_id')
@@ -544,7 +561,8 @@ class UserTicketViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateA
         serializer = UserTicketSerializer(user_ticket)
         return Response(serializer.data)
 
-    @action(methods=['patch'], detail=False, url_path='update/(?P<user_ticket_id>[^/.]+)', permission_classes=[permissions.IsAuthenticated, IsBusCompany])
+    @action(methods=['patch'], detail=False, url_path='update/(?P<user_ticket_id>[^/.]+)',
+            permission_classes=[permissions.IsAuthenticated, IsBusCompany])
     def update_ticket(self, request, user_ticket_id=None):
         try:
             user_ticket = UserTicket.objects.get(pk=user_ticket_id)
@@ -563,4 +581,3 @@ class UserTicketViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateA
 
         serializer = UserTicketSerializer(user_ticket)
         return Response(serializer.data)
-

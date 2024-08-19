@@ -52,7 +52,7 @@ class Trip(BaseModel):
     ticket_price = models.DecimalField(max_digits=10, decimal_places=2)
 
 class Ticket(BaseModel):
-    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, unique=True)
+    trip = models.OneToOneField(Trip, on_delete=models.CASCADE)
     total_seats = models.IntegerField(default=0)  # Tổng số lượng ghế trong chuyến
     remaining_seats = models.IntegerField(default=0)  # Số lượng vé còn lại trong chuyến
 

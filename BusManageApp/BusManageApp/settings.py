@@ -15,7 +15,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -27,10 +26,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -79,13 +78,98 @@ TEMPLATES = [
     },
 ]
 
+JAZZMIN_SETTINGS = {
+    "site_title": "Bus Management Admin",
+    "site_header": "Bus Management",
+    "site_brand": "Bus Management",
+    "site_logo": "bus/img/logo.png",  # Đường dẫn tới logo của bạn
+    "login_logo": None,
+    "login_logo_dark": None,
+    "site_logo_classes": "img-circle",
+    "site_icon": None,
+    "welcome_sign": "Welcome to Bus Management Admin",
+    "copyright": "Bus Management Ltd",
+    "search_model": [
+        "auth.User",
+        # "auth.Group",
+        # "bus.BusCompany",
+        # "bus.BusRoute",
+        # "bus.Trip",
+        # "bus.Ticket",
+        # "bus.UserTicket",
+        # "bus.Review",
+        # "bus.Comments",
+        # "bus.RevenueStatistics",
+        # "bus.Delivery",
+        # "bus.Like"
+    ],
+
+    "user_avatar": "avatar",  # Sử dụng trường avatar từ model User
+
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
+        {"model": "auth.User"},
+        {"app": "bus"},
+    ],
+
+    "usermenu_links": [
+        {"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
+        {"model": "auth.user"}
+    ],
+
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "order_with_respect_to": ["auth", "bus", "BusCompany", "BusRoute", "Trip", "Ticket", "UserTicket", "Delivery",
+                              "Review", "Comments", "RevenueStatistics", "Like"],
+
+    "custom_links": {
+        "bus": [{
+            "name": "Manage Reviews",
+            "url": "manage_reviews",
+            "icon": "fas fa-star",
+            "permissions": ["bus.view_review"]
+        }]
+    },
+
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "BusCompany": "fas fa-building",
+        "BusRoute": "fas fa-route",
+        "Trip": "fas fa-bus",
+        "Ticket": "fas fa-ticket-alt",
+        "UserTicket": "fas fa-ticket-alt",
+        "Review": "fas fa-star",
+        "Comments": "fas fa-comments",
+        "RevenueStatistics": "fas fa-chart-line",
+        "Delivery": "fas fa-truck",
+        "Like": "fas fa-thumbs-up",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    "related_modal_active": False,
+
+    "custom_css": None,
+    "custom_js": None,
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},
+    "language_chooser": False,
+}
+
 WSGI_APPLICATION = 'BusManageApp.wsgi.application'
 
 from django.utils import timezone
 
 TIME_ZONE = 'Asia/Ho_Chi_Minh'
 USE_TZ = True
-
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -104,12 +188,11 @@ DATABASES = {
 CLIENT_ID = 'n4yjvSnqOIdMDBVDRbE7WJCqxdWmG56ba2g3plQR'
 CLIENT_SECRET = '3lRV8xvZMiCQYgOiP9umz4Qi8chD2eByi0BppGR43LWttjKKwpSv8Ql7ada4p9w0uFuOPdwkmukQeHfdE8sFOMmZQteHvOYJbCUh4gmOxaqLyzOWZ8vaEnaOzOPsEl5R'
 
-
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 5,
     'DEFAULT_AUTHENTICATION_CLASSES': ('oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-) }
+                                       )}
 
 import cloudinary
 
@@ -118,7 +201,6 @@ cloudinary.config(
     api_key="853573281637597",
     api_secret="tlIQH3E4bQ3TM1XhLh2GqGpJNeA"
 )
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -150,7 +232,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
@@ -159,8 +240,6 @@ STATIC_URL = 'static/'
 MEDIA_ROOT = '%s/BusManage/static/' % BASE_DIR
 CKEDITOR_UPLOAD_PATH = "ckeditor/images/"
 CLOUDINARY_URL = "cloudinary://853573281637597:tlIQH3E4bQ3TM1XhLh2GqGpJNeA@dx9aknvnz"
-
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
