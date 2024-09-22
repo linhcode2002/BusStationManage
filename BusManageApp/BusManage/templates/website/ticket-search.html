@@ -1,0 +1,56 @@
+{% extends 'website/main.html' %}
+{% block title %}Home{% endblock %}
+{% load static %}
+{% block content %}
+
+<style>
+    .custum-container {
+        display: flex;
+        justify-content: center; /* Căn giữa theo chiều ngang */
+        align-items: center; /* Căn giữa theo chiều dọc */
+        flex-direction: column; /* Đặt các phần tử con theo chiều dọc */
+        height: 100vh; /* Chiều cao chiếm toàn màn hình */
+        text-align: center;
+        color: black;
+    }
+
+    .custum-container h1 {
+        margin-bottom: 20px;
+    }
+
+    .custum-container input {
+        padding: 10px;
+        margin: 10px 0;
+        width: 300px; /* Đặt chiều rộng cho ô nhập liệu */
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .custum-container button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #ff5722;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .custum-container button:hover {
+        background-color: #e64a19;
+    }
+</style>
+
+<div class="custum-container">
+    <h1>
+        TRA CỨU THÔNG TIN ĐẶT VÉ
+    </h1>
+    <input placeholder="Vui lòng nhập số điện thoại" type="text"/>
+    <input placeholder="Vui lòng nhập mã vé" type="text"/>
+    <button>
+        Tra cứu
+    </button>
+</div>
+
+{% endblock %}

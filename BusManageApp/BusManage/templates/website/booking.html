@@ -1,0 +1,141 @@
+{% extends 'website/main.html' %}
+{% block title %}Booking{% endblock %}
+{% load static %}
+{% block content %}
+<style>
+    .body {
+        background-color: #f8f9fa;
+    }
+    .seat {
+        width: 40px;
+        height: 40px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        text-align: center;
+        line-height: 40px;
+        margin: 5px;
+        cursor: pointer;
+    }
+    .seat.sold {
+        background-color: #d3d3d3;
+    }
+    .seat.available {
+        background-color: #e6f7ff;
+    }
+    .seat.selected {
+        background-color: #ffe6e6;
+    }
+    .legend {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+    }
+    .legend div {
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        border: 1px solid #ccc;
+    }
+    .legend .sold {
+        background-color: #d3d3d3;
+    }
+    .legend .available {
+        background-color: #e6f7ff;
+    }
+    .legend .selected {
+        background-color: #ffe6e6;
+    }
+    .info-box {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    .info-box h5 {
+        margin-bottom: 15px;
+    }
+    /* Đoạn mã thêm vào để chỉnh màu chữ */
+    body, h4, h5, p, a {
+        color: black; /* Màu chữ đen */
+    }
+</style>
+
+<br>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h4>Chọn ghế</h4>
+            <div class="d-flex justify-content-between mt-3">
+                <img src="{% static 'assets/images/ghe.png' %}">
+            </div>
+            <div id="seat-selection">
+                {% for seat in seats %}
+                    <div class="seat available" data-seat="{{ seat.name }}">{{ seat.name }}</div>
+                {% endfor %}
+            </div>
+            <p id="selected-count">Đã chọn: 0 ghế</p>
+            <input type="hidden" name="selected_seats" id="selected_seats" value="">
+        </div>
+        <div class="col-md-4">
+            <div class="info-box">
+                <h5>Thông tin lượt đi</h5>
+                <p><strong>Tuyến xe:</strong> {{ trip.bus_route.start_location }} - {{ trip.bus_route.end_location }}</p>
+                <p><strong>Thời gian xuất bến:</strong> {{ trip.departure_time }}</p>
+                <p><strong>Số lượng ghế:</strong> <span id="count-seats">0</span> Ghế</p>
+                <p><strong>Số ghế:</strong> <span id="selected-seats"></span></p>
+                <p><strong>Điểm trả khách: </strong>{{ trip.bus_route.end_location }}</p>
+                <p><strong>Tổng tiền lượt đi:</strong> {{ trip.ticket_price }}đ</p>
+            </div>
+            <div class="info-box">
+                <h5>Chi tiết giá</h5>
+                <p><strong>Giá vé lượt đi:</strong> {{ trip.ticket_price }}đ</p>
+                <p><strong>Phí thanh toán:</strong> 0đ</p>
+                <p><strong>Tổng tiền:</strong> {{ trip.ticket_price }}đ</p>
+            </div>
+            <button id="confirm-button" class="btn btn-primary">Xác nhận chọn ghế</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const seats = document.querySelectorAll('.seat');
+    const selectedCount = document.getElementById('selected-count');
+    const countSeats = document.getElementById('count-seats');
+    const selectedSeats = document.getElementById('selected-seats');
+    const selectedSeatsInput = document.getElementById('selected_seats');
+    let selectedSeatsArray = [];
+
+    seats.forEach(seat => {
+        seat.addEventListener('click', () => {
+            if (seat.classList.contains('selected')) {
+                seat.classList.remove('selected');
+                selectedSeatsArray = selectedSeatsArray.filter(s => s !== seat.dataset.seat);
+            } else if (selectedSeatsArray.length < 4) {
+                seat.classList.add('selected');
+                selectedSeatsArray.push(seat.dataset.seat);
+            }
+            updateSelectedCount();
+        });
+    });
+
+    function updateSelectedCount() {
+        selectedCount.textContent = `Đã chọn: ${selectedSeatsArray.length} ghế`;
+        countSeats.textContent = selectedSeatsArray.length;
+        selectedSeats.textContent = selectedSeatsArray.join(', ');
+        selectedSeatsInput.value = selectedSeatsArray.join(',');
+    }
+
+    document.getElementById('confirm-button').addEventListener('click', () => {
+        if (selectedSeatsArray.length === 0) {
+            alert('Vui lòng chọn ít nhất một ghế.');
+        } else {
+            // Gửi dữ liệu tới server (có thể sử dụng AJAX hoặc form submission)
+            document.querySelector('form').submit();
+        }
+    });
+</script>
+
+
+{% endblock %}

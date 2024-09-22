@@ -1,11 +1,9 @@
-from django.db.models import BooleanField
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ValidationError, PrimaryKeyRelatedField
 from .models import *
+from django.contrib.auth import authenticate
+from .models import Customer
 
-class BusCompanySerializer(ModelSerializer):
-    class Meta:
-        model = BusCompany
-        fields = ['id', 'name', 'description', 'avatar']
 
 class UserSerializer(ModelSerializer):
     class Meta:
@@ -14,6 +12,7 @@ class UserSerializer(ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True},
         }
+
     def create(self, validated_data):
         data = validated_data.copy()
         user = User(**data)
@@ -22,25 +21,17 @@ class UserSerializer(ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
-        validated_data.pop('username', None)  # Xóa trường 'username' khỏi validated_data để đảm bảo không thay đổi
+        # Kiểm tra nếu mật khẩu được thay đổi thì băm lại mật khẩu
+        if 'password' in validated_data:
+            instance.set_password(validated_data.pop('password'))
         return super().update(instance, validated_data)
-
-
-class DeliverySerializer(ModelSerializer):
-    class Meta:
-        model = Delivery
-        fields = '__all__'
 
 
 class ReviewSerializer(ModelSerializer):
     class Meta:
         model = Review
-        fields = ['id', 'rating', 'created_date', 'updated_date']
+        fields = ['id', 'rating', 'created_date', 'updated_date', 'customer_email']  # Thêm customer_email
 
-class CommentSerializer(ModelSerializer):
-    class Meta:
-        model = Comments
-        fields = ['id', 'comment', 'created_date', 'updated_date']
 
 class RevenueStatisticsSerializer(ModelSerializer):
     class Meta:
@@ -48,65 +39,46 @@ class RevenueStatisticsSerializer(ModelSerializer):
         fields = '__all__'
 
 
-class LikeSerializer(ModelSerializer):
-    class Meta:
-        model = Like
-        fields = '__all__'
-
-
-class RoleSerializer(ModelSerializer):
-    class Meta:
-        model = Role
-        fields = '__all__'
-
-
-class UserRoleSerializer(ModelSerializer):
-    class Meta:
-        model = UserRole
-        fields = '__all__'
-
-
 class BusRouteSerializer(ModelSerializer):
-    bus_company = PrimaryKeyRelatedField(queryset=BusCompany.objects.all())
     class Meta:
         model = BusRoute
-        fields = ['id', 'bus_company', 'route_name', 'start_location', 'end_location']
-
-    def create(self, validated_data):
-        user = self.context['request'].user
-        if user.groups.filter(name='bus_company').exists():
-            return super().create(validated_data)
-        else:
-            raise ValidationError("Bạn không có quyền tạo tuyến xe.")
-
-    def update(self, instance, validated_data):
-        user = self.context['request'].user
-        if user.groups.filter(name='bus_company').exists() and instance.bus_company.admin_user == user:
-            return super().update(instance, validated_data)
-        else:
-            raise ValidationError("Bạn không có quyền sửa tuyến xe.")
+        fields = ['id', 'route_name', 'start_location', 'end_location', 'distance']
 
 
 class TripSerializer(ModelSerializer):
     bus_route = BusRouteSerializer()
-    bus_company = BusCompanySerializer()
+
     class Meta:
         model = Trip
         fields = '__all__'
 
 
-class TicketSerializer(ModelSerializer):
+class BookingSerializer(ModelSerializer):  # Thay đổi từ TicketSerializer sang BookingSerializer
     trip = PrimaryKeyRelatedField(queryset=Trip.objects.all())
-    class Meta:
-        model = Ticket
-        fields = '__all__'
+    seat = PrimaryKeyRelatedField(queryset=Seat.objects.all())
 
-class UserTicketSerializer(ModelSerializer):
-    ticket = PrimaryKeyRelatedField(queryset=Ticket.objects.all())
-    user = PrimaryKeyRelatedField(queryset=User.objects.all())
     class Meta:
-        model = UserTicket
-        fields = ['id', 'user', 'active', 'payment_status', 'is_online_booking', 'quantity', 'ticket', 'total_price']
-        extra_kwargs = {
-            'total_price': {'read_only': True}
-        }
+        model = Booking
+        fields = ['id', 'trip', 'seat', 'customer_email', 'customer_name', 'customer_phone', 'booking_time']
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Customer
+        fields = ['email', 'password']
+
+    # def validate(self, attrs):
+    #     email = attrs.get('email')
+    #     password = attrs.get('password')
+    #
+    #     if email and password:
+    #         user = authenticate(username=email, password=password)
+    #         if user is None:
+    #             raise serializers.ValidationError('Email hoặc mật khẩu không đúng.')
+    #         attrs['user'] = user
+    #         return attrs
+    #
+    #     raise serializers.ValidationError('Vui lòng nhập email và mật khẩu.')

@@ -1,0 +1,161 @@
+{% extends 'website/main.html' %}
+{% block title %}Lịch trình{% endblock %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<style>
+    .custum-container body {
+        background-color: #fff;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        margin-top: 20px;
+    }
+    .custum-container .container {
+        width: 80%;
+        margin: 20px auto;
+        margin-top: 20px;
+    }
+    .custum-container .search-bar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 40px;
+        margin-top: 20px;
+    }
+    .custum-container .search-bar input {
+        width: 45%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 25px;
+        font-size: 16px;
+    }
+    .custum-container .search-bar input::placeholder {
+        color: #ddd;
+    }
+    .custum-container .search-bar .swap-icon {
+        position: relative;
+        top: 10px;
+        font-size: 20px;
+        color: #ff4500;
+    }
+    .custum-container table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .custum-container th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    /*    .custum-container th {*/
+    /*        background-color: #f9f9f9;*/
+    /*    }*/
+    .custum-container .route {
+        color: #ff4500;
+    }
+    .custum-container .button {
+        background-color: #ffe6e6;
+        color: #ff4500;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+    .custum-container .button:hover {
+        background-color: #ffcccc;
+    }
+</style>
+<br>
+<div class="custum-container">
+    <div class="container">
+    <div class="search-bar">
+        <input type="text" placeholder="Nhập điểm đi">
+        <i class="fas fa-exchange-alt swap-icon"></i>
+        <input type="text" placeholder="Nhập điểm đến">
+    </div>
+    <table>
+        <thead>
+        <tr>
+            <th>Tuyến xe</th>
+            <th>Loại xe</th>
+            <th>Quãng đường</th>
+            <th>Thời gian hành trình</th>
+            <th>Giá vé</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td class="route">An Nhơn ⇌ TP. Hồ Chí Minh</td>
+            <td>Giường</td>
+            <td>639km</td>
+            <td>11 giờ 30 phút</td>
+            <td>---</td>
+            <td>
+                <button class="button">Tìm tuyến xe</button>
+            </td>
+        </tr>
+        <tr>
+            <td class="route">An Nhơn ⇌ TP. Hồ Chí Minh</td>
+            <td>Giường</td>
+            <td>660km</td>
+            <td>13 giờ 46 phút</td>
+            <td>---</td>
+            <td>
+                <button class="button">Tìm tuyến xe</button>
+            </td>
+        </tr>
+        <tr>
+            <td class="route">An Nhơn ⇌ TP. Hồ Chí Minh</td>
+            <td>---</td>
+            <td>627km</td>
+            <td>10 giờ 7 phút</td>
+            <td>---</td>
+            <td>
+                <button class="button">Tìm tuyến xe</button>
+            </td>
+        </tr>
+        <tr>
+            <td class="route">Bạc Liêu ⇌ TP. Hồ Chí Minh</td>
+            <td>Giường</td>
+            <td>271km</td>
+            <td>6 giờ</td>
+            <td>---</td>
+            <td>
+                <button class="button">Tìm tuyến xe</button>
+            </td>
+        </tr>
+        <tr>
+            <td class="route">Bảo Lộc ⇌ Bình Sơn</td>
+            <td>Limousine</td>
+            <td>650km</td>
+            <td>15 giờ 30 phút</td>
+            <td>---</td>
+            <td>
+                <button class="button">Tìm tuyến xe</button>
+            </td>
+        </tr>
+        <tr>
+            <td class="route">Bảo Lộc ⇌ Đà Nẵng</td>
+            <td>Giường</td>
+            <td>756km</td>
+            <td>16 giờ 38 phút</td>
+            <td>---</td>
+            <td>
+                <button class="button">Tìm tuyến xe</button>
+            </td>
+        </tr>
+        <tr>
+            <td class="route">Bảo Lộc ⇌ Huế</td>
+            <td>Giường</td>
+            <td>827km</td>
+            <td>19 giờ</td>
+            <td>---</td>
+            <td>
+                <button class="button">Tìm tuyến xe</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</div>
+{% endblock %}

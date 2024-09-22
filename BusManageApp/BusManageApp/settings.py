@@ -26,6 +26,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+from django.utils import timezone
+
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
+USE_TZ = True
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -47,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'BusManage.middleware.CacheControlMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -89,19 +95,16 @@ JAZZMIN_SETTINGS = {
     "site_icon": None,
     "welcome_sign": "Welcome to Bus Management Admin",
     "copyright": "Bus Management Ltd",
+
+    # Các model bạn muốn tìm kiếm
     "search_model": [
         "auth.User",
-        # "auth.Group",
-        # "bus.BusCompany",
+        # "bus.Customer",
         # "bus.BusRoute",
         # "bus.Trip",
-        # "bus.Ticket",
-        # "bus.UserTicket",
+        # "bus.Booking",
         # "bus.Review",
-        # "bus.Comments",
         # "bus.RevenueStatistics",
-        # "bus.Delivery",
-        # "bus.Like"
     ],
 
     "user_avatar": "avatar",  # Sử dụng trường avatar từ model User
@@ -120,10 +123,14 @@ JAZZMIN_SETTINGS = {
 
     "show_sidebar": True,
     "navigation_expanded": True,
+
+    # Không ẩn ứng dụng hay model nào
     "hide_apps": [],
     "hide_models": [],
-    "order_with_respect_to": ["auth", "bus", "BusCompany", "BusRoute", "Trip", "Ticket", "UserTicket", "Delivery",
-                              "Review", "Comments", "RevenueStatistics", "Like"],
+
+    # Thứ tự hiển thị các ứng dụng và model
+    "order_with_respect_to": ["auth", "bus", "Customer", "BusRoute", "Trip",
+                              "Booking", "Review", "RevenueStatistics"],
 
     "custom_links": {
         "bus": [{
@@ -134,20 +141,17 @@ JAZZMIN_SETTINGS = {
         }]
     },
 
+    # Đặt icon cho các model
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
-        "BusCompany": "fas fa-building",
-        "BusRoute": "fas fa-route",
-        "Trip": "fas fa-bus",
-        "Ticket": "fas fa-ticket-alt",
-        "UserTicket": "fas fa-ticket-alt",
-        "Review": "fas fa-star",
-        "Comments": "fas fa-comments",
-        "RevenueStatistics": "fas fa-chart-line",
-        "Delivery": "fas fa-truck",
-        "Like": "fas fa-thumbs-up",
+        "bus.Customer": "fas fa-user",
+        "bus.BusRoute": "fas fa-route",
+        "bus.Trip": "fas fa-bus",
+        "bus.Booking": "fas fa-ticket-alt",
+        "bus.Review": "fas fa-star",
+        "bus.RevenueStatistics": "fas fa-chart-line",
     },
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
@@ -164,12 +168,10 @@ JAZZMIN_SETTINGS = {
     "language_chooser": False,
 }
 
+
 WSGI_APPLICATION = 'BusManageApp.wsgi.application'
 
-from django.utils import timezone
 
-TIME_ZONE = 'Asia/Ho_Chi_Minh'
-USE_TZ = True
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -225,12 +227,6 @@ AUTH_USER_MODEL = 'BusManage.User'
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/

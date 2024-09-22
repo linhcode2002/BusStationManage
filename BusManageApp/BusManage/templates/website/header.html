@@ -1,4 +1,25 @@
 {% load static %}
+<style>
+    .site-navbar {
+        background-color: #e0f7fa !important; /* Màu xanh nhạt */
+        padding: 20px 0 !important;
+    }
+
+    .site-logo a {
+        font-size: 24px !important;
+        color: #00796b !important; /* Màu xanh đậm cho logo */
+    }
+
+    .site-menu .nav-link {
+        color: #00796b !important; /* Màu xanh đậm cho liên kết menu */
+    }
+
+    .top-bar {
+        background-color: #b2ebf2 !important; /* Nền xanh nhạt cho top-bar */
+        padding: 10px 0 !important;
+    }
+</style>
+
 <div class="site-mobile-menu site-navbar-target">
     <div class="site-mobile-menu-header">
         <div class="site-mobile-menu-close mt-3">
@@ -20,12 +41,30 @@
 
 
                 <div class="float-right">
-                    <a href="#" id="login-link" class="">
-                        <span class="mr-2"></span>
-                        <span class="d-none d-md-inline-block">
-                            Đăng nhập/Đăng ký
-                        </span>
-                    </a>
+                    {% if is_authenticated %}
+                        <!-- Hiển thị tên người dùng đã đăng nhập -->
+                        <div class="dropdown">
+                            <a href="#" class="dropdown-toggle" id="user-dropdown" data-toggle="dropdown"
+                               aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2"></span>
+                                <span class="d-none d-md-inline-block">
+                                    <b>{{ customer_email  }}</b> <!-- Hiển thị tên người dùng -->
+                                </span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-dropdown">
+                                <a class="dropdown-item" href="">Thông tin cá nhân</a>
+                                <a class="dropdown-item" href="{% url 'logout' %}">Đăng xuất</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Hiển thị đăng nhập/đăng ký nếu chưa đăng nhập -->
+                        <a href="#" id="login-link" class="">
+                            <span class="mr-2"></span>
+                            <span class="d-none d-md-inline-block">
+                                <b>Đăng nhập/Đăng ký</b>
+                            </span>
+                        </a>
+                    {% endif %}
                 </div>
 
             </div>
@@ -42,27 +81,26 @@
 
 
             <div class="site-logo">
-                <a href="index.html" class="text-black"><span class="text-primary">Depot</span></a>
+                <a href="{% url 'home' %}" class="text-black"><span class="text-primary">Văn Lĩnh</span></a>
             </div>
 
             <div class="col-12">
                 <nav class="site-navigation text-right ml-auto " role="navigation">
 
                     <ul class="site-menu main-menu js-clone-nav ml-auto d-none d-lg-block">
-                        <li><a href="#home-section" class="nav-link">Home</a></li>
-                        <li><a href="#services-section" class="nav-link">Services</a></li>
+                        <li><a href="{% url 'home' %}" class="nav-link">Trang chủ</a></li>
+                        <li><a href="{% url 'schedule' %}" class="nav-link">Lịch trình</a></li>
 
 
                         <li>
-                            <a href="#about-section" class="nav-link">About Us</a>
+                            <a href="{% url 'ticket_search' %}" class="nav-link">Tra cứu vé</a>
 
                         </li>
 
-                        <li><a href="#why-us-section" class="nav-link">Why Us</a></li>
+                        <li><a href="{% url 'contact' %}" class="nav-link">Liên hệ</a></li>
 
-                        <li><a href="#testimonials-section" class="nav-link">Testimonials</a></li>
-                        <li><a href="#blog-section" class="nav-link">Blog</a></li>
-                        <li><a href="#contact-section" class="nav-link">Contact</a></li>
+                        <li><a href="{% url 'about' %}" class="nav-link">Về chúng tôi</a></li>
+
                     </ul>
                 </nav>
 
