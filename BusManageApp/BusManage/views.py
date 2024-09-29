@@ -1,7 +1,10 @@
 import debug_toolbar
+from django.contrib.auth.decorators import login_required
+from django.contrib.sites import requests
 from django.core.checks import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
+from django.urls import reverse
 from rest_framework import viewsets, permissions, generics, status
 from rest_framework.decorators import action, api_view
 from rest_framework.parsers import MultiPartParser
@@ -23,7 +26,17 @@ from .models import *
 from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
 from django.http import JsonResponse
-
+import json
+import requests
+import json
+import uuid
+import hashlib
+import hmac
+import qrcode
+from django.core.mail import send_mail
+from django.conf import settings
+from django.shortcuts import render, redirect
+from .forms import CustomerProfileForm, PasswordChangeForm
 
 # class BookingViewSet(viewsets.ModelViewSet):
 #     queryset = Booking.objects.all()
@@ -69,7 +82,9 @@ def search_trip(request):
     destination = request.GET.get('destination')
     date_input = request.GET.get('date')
 
-    queryset = Trip.objects.all()  # Khởi tạo queryset
+    now = timezone.now()
+
+    queryset = Trip.objects.filter(active=True, departure_time__gt=now)
 
     if departure:
         queryset = queryset.filter(bus_route__start_location__icontains=departure)
@@ -78,30 +93,35 @@ def search_trip(request):
 
     if date_input:
         try:
-            # Chuyển đổi chuỗi ngày thành đối tượng datetime
             departure_date = datetime.strptime(date_input, '%d/%m/%Y').date()
-            # Tạo đối tượng datetime bắt đầu và kết thúc cho ngày được chỉ định
             start_datetime = timezone.make_aware(datetime.combine(departure_date, datetime.min.time()))
             end_datetime = timezone.make_aware(datetime.combine(departure_date, datetime.max.time()))
-            # Lọc các chuyến xe trong phạm vi thời gian từ start_datetime đến end_datetime
             queryset = queryset.filter(departure_time__range=(start_datetime, end_datetime))
         except ValueError:
             return HttpResponse("<h1>Định dạng ngày không hợp lệ!</h1><a href='/'>Quay về trang chủ</a>")
 
-    # Tính toán thời gian và thêm vào từng chuyến xe
     trips = []
     for trip in queryset:
         duration = trip.arrival_time - trip.departure_time
-        hours, remainder = divmod(duration.seconds, 3600)
+        total_seconds = duration.total_seconds()
+
+        # Tính số giờ và phút
+        hours, remainder = divmod(total_seconds, 3600)
         minutes, _ = divmod(remainder, 60)
-        setattr(trip, 'duration_str', f"{hours} giờ {minutes} phút")  # Thêm thời gian vào trip
+
+        # Chuyển đổi sang số nguyên cho giờ và phút
+        hours = int(hours)
+        minutes = int(minutes)
+
+        # Thêm thông tin thời gian vào trip
+        setattr(trip, 'duration_str', f"{hours} giờ {minutes} phút")
         trips.append(trip)
 
     context = {
         'trips': trips,
         'departure': departure,
         'destination': destination,
-        'date': date_input  # Sử dụng date_input để hiển thị
+        'date': date_input
     }
 
     return render(request, 'website/trip_search_results.html', context)
@@ -109,6 +129,7 @@ def search_trip(request):
 
 from django.shortcuts import render, get_object_or_404
 from .models import Trip, Seat
+
 
 class LoginView(APIView):
     def post(self, request):
@@ -124,8 +145,8 @@ class LoginView(APIView):
         if check_password(password, user.password):
             # Lưu thông tin người dùng vào session
             request.session['customer_id'] = user.id
+            request.session['is_customer_authenticated'] = True
             request.session['customer_email'] = user.email
-            request.session['is_authenticated'] = True  # Thêm flag xác nhận đã đăng nhập
 
             # Xử lý đăng nhập thành công
             return Response({"message": "Đăng nhập thành công!"}, status=status.HTTP_200_OK)
@@ -169,8 +190,57 @@ class SignupView(APIView):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@login_required
+def profile_view(request):
+    is_authenticated = request.session.get('is_customer_authenticated', False)
+    customer_email = request.session.get('customer_email')
+    print("Customer session:", request.session.get('customer_id'), request.session.get('customer_email'))
+
+    try:
+        customer = Customer.objects.get(email=customer_email)
+    except Customer.DoesNotExist:
+        return redirect('login')
+
+    # Khởi tạo biến form và password_form
+    form = CustomerProfileForm(instance=customer)
+    password_form = PasswordChangeForm(initial={'email': customer_email})
+
+    if request.method == 'POST':
+        if 'update_profile' in request.POST:
+            # Xử lý cập nhật thông tin cá nhân
+            form = CustomerProfileForm(request.POST, request.FILES, instance=customer)
+            if form.is_valid():
+                form.save()
+                return redirect('profile')  # Thay đổi này nếu bạn đã định nghĩa trong urls.py
+        elif 'change_password' in request.POST:
+            # Xử lý đổi mật khẩu
+            password_form = PasswordChangeForm(request.POST, initial={'email': customer_email})
+            if password_form.is_valid():
+                # Kiểm tra mật khẩu cũ
+                if check_password(password_form.cleaned_data['old_password'], customer.password):
+                    # Kiểm tra mật khẩu mới và xác nhận
+                    new_password = password_form.cleaned_data['new_password']
+                    confirm_password = password_form.cleaned_data['confirm_password']
+                    if new_password == confirm_password:
+                        # Băm mật khẩu mới và lưu vào customer
+                        customer.password = make_password(new_password)
+                        customer.save()
+                        return redirect('profile')  # Thay đổi này nếu bạn đã định nghĩa trong urls.py
+                    else:
+                        password_form.add_error('confirm_password', "Mật khẩu mới và xác nhận không khớp.")
+                else:
+                    password_form.add_error('old_password', "Mật khẩu cũ không chính xác.")
+
+    return render(request, 'website/profile.html', {
+        'is_authenticated': is_authenticated,
+        'customer_email': customer_email,
+        'form': form,
+        'password_form': password_form,
+    })
+
+
 def submit_review(request):
-    is_authenticated = request.session.get('is_authenticated', False)
+    is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')
 
     if request.method == 'POST':
@@ -204,7 +274,7 @@ def submit_review(request):
 
 
 def home(request):
-    is_authenticated = request.session.get('is_authenticated', False)
+    is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')
 
     return render(request, 'website/home.html', {
@@ -218,47 +288,232 @@ def logout_view(request):
     request.session.flush()  # Xóa tất cả dữ liệu session
     return redirect('home')  # Chuyển hướng về trang chính
 
+def generate_signature(raw_data, secret_key):
+    """Generate HMAC SHA256 signature"""
+    return hmac.new(bytes(secret_key, 'utf-8'), bytes(raw_data, 'utf-8'), hashlib.sha256).hexdigest()
 
 def booking(request, trip_id):
-    is_authenticated = request.session.get('is_authenticated', False)
+    is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')
     trip = get_object_or_404(Trip, id=trip_id)
-    seats = Seat.objects.filter(bus=trip.bus_route.bus)
+    seats = list(Seat.objects.filter(bus=trip.bus_route.bus))
+    booked_seats = Booking.objects.filter(trip=trip).values_list('seat__name', flat=True)
+    seats.reverse()
 
-    print(trip)
     if request.method == 'POST':
-        selected_seats = request.POST.get('selected_seats').split(',')
-        # Xử lý đặt vé cho các ghế đã chọn
-        # Ví dụ: Tạo bản ghi trong bảng đặt vé hoặc thông báo người dùng
-        # Giả sử bạn đã có một model Booking để lưu trữ thông tin đặt vé
+        data = json.loads(request.body)
+        selected_seats = data['selected_seats']
+        customer_name = data['name']
+        customer_phone = data['phone']
+        customer_email = data['email']
 
-        # Redirect hoặc render một trang thông báo
-        return render(request, 'website/booking_success.html', {
-            'trip': trip,
-            'seats': selected_seats,
-        })
+        if len(selected_seats) == 0:
+            messages.error(request, "Vui lòng chọn ít nhất một ghế.")
+            return JsonResponse({'error': 'No seats selected'})
+
+        for seat_name in selected_seats:
+            if seat_name in booked_seats:
+                messages.error(request, f"Ghế {seat_name} đã được đặt.")
+                return JsonResponse({'error': f'Seat {seat_name} unavailable'})
+
+            seat = get_object_or_404(Seat, name=seat_name)
+            Booking.objects.create(
+                trip=trip,
+                seat=seat,
+                customer_name=customer_name,
+                customer_phone=customer_phone,
+                customer_email=customer_email
+            )
+
+        payment_url = reverse('payment')  # URL thanh toán
+        return JsonResponse({'payment_url': payment_url})
 
     return render(request, 'website/booking.html', {
         'trip': trip,
         'seats': seats,
-        'is_authenticated': request.session.get('is_authenticated', False),
-        'customer_email': request.session.get('customer_email'),
-    })
-
-
-
-def schedule(request):
-    is_authenticated = request.session.get('is_authenticated', False)
-    customer_email = request.session.get('customer_email')
-
-    return render(request, 'website/schedule.html', {
+        'booked_seats': booked_seats,
         'is_authenticated': is_authenticated,
         'customer_email': customer_email,
     })
 
 
+
+
+def payment(request):
+    if request.method == 'POST':
+        booking_id = request.POST.get('booking_id')
+        try:
+            booking = Booking.objects.get(id=booking_id)
+        except Booking.DoesNotExist:
+            messages.error(request, "Xác nhận đặt vé thất bại. Vui lòng thử lại.")
+            return redirect('booking', trip_id=booking.trip.id)
+
+        # MoMo payment integration
+        endpoint = "https://test-payment.momo.vn/v2/gateway/api/create"
+        partner_code = "MOMO"
+        access_key = "YOUR_ACCESS_KEY"
+        secret_key = "YOUR_SECRET_KEY"
+        order_id = str(uuid.uuid4())
+        amount = booking.trip.ticket_price * len(Booking.objects.filter(trip=booking.trip, customer_email=booking.customer_email))
+        request_id = str(uuid.uuid4())
+        order_info = "Thanh toán vé xe"
+        return_url = "http://127.0.0.1:8000/thanh-toan-thanh-cong/"
+        notify_url = "http://yourdomain.com/payment/notify/"
+        extra_data = ""
+
+        raw_data = f"accessKey={access_key}&amount={amount}&extraData={extra_data}&ipnUrl={notify_url}&orderId={order_id}&orderInfo={order_info}&partnerCode={partner_code}&redirectUrl={return_url}&requestId={request_id}&requestType=captureWallet"
+        signature = generate_signature(raw_data, secret_key)
+
+        # Data gửi đến MoMo
+        data = {
+            "partnerCode": partner_code,
+            "partnerName": "MoMo",
+            "storeId": "MomoTestStore",
+            "requestId": request_id,
+            "amount": amount,
+            "orderId": order_id,
+            "orderInfo": order_info,
+            "redirectUrl": return_url,
+            "ipnUrl": notify_url,
+            "lang": "vi",
+            "extraData": extra_data,
+            "requestType": "captureWallet",
+            "signature": signature
+        }
+
+        response = requests.post(endpoint, json=data)
+        payment_data = response.json()
+
+        if payment_data.get("resultCode") == 0:
+            return redirect(payment_data.get("payUrl"))
+        else:
+            messages.error(request, payment_data.get("message"))
+            return redirect('booking', trip_id=booking.trip.id)
+
+    return render(request, 'website/payment.html')
+
+
+
+def payment(request):
+    if request.method == 'POST':
+        booking_id = request.POST.get('booking_id')
+        try:
+            booking = Booking.objects.get(id=booking_id)
+        except Booking.DoesNotExist:
+            messages.error(request, "Xác nhận đặt vé thất bại. Vui lòng thử lại.")
+            return redirect('booking', trip_id=booking.trip.id)
+
+        # MoMo payment integration
+        endpoint = "https://test-payment.momo.vn/v2/gateway/api/create"
+        partner_code = "MOMO"
+        access_key = "YOUR_ACCESS_KEY"
+        secret_key = "YOUR_SECRET_KEY"
+        order_id = str(uuid.uuid4())
+        amount = booking.trip.ticket_price * len(Booking.objects.filter(trip=booking.trip, customer_email=booking.customer_email))
+        request_id = str(uuid.uuid4())
+        order_info = "Thanh toán vé xe"
+        return_url = "http://yourdomain.com/payment/success/"
+        notify_url = "http://yourdomain.com/payment/notify/"
+        extra_data = ""
+
+        raw_data = f"accessKey={access_key}&amount={amount}&extraData={extra_data}&ipnUrl={notify_url}&orderId={order_id}&orderInfo={order_info}&partnerCode={partner_code}&redirectUrl={return_url}&requestId={request_id}&requestType=captureWallet"
+        signature = generate_signature(raw_data, secret_key)
+
+        data = {
+            "partnerCode": partner_code,
+            "partnerName": "MoMo",
+            "storeId": "MomoTestStore",
+            "requestId": request_id,
+            "amount": amount,
+            "orderId": order_id,
+            "orderInfo": order_info,
+            "redirectUrl": return_url,
+            "ipnUrl": notify_url,
+            "lang": "vi",
+            "extraData": extra_data,
+            "requestType": "captureWallet",
+            "signature": signature
+        }
+
+        response = requests.post(endpoint, json=data)
+        payment_data = response.json()
+
+        if payment_data.get("resultCode") == 0:
+            # Trả về URL mã QR
+            qr_url = payment_data.get("payUrl")
+            return render(request, 'website/payment_qr.html', {'qr_url': qr_url, 'booking': booking})
+        else:
+            messages.error(request, payment_data.get("message"))
+            return redirect('booking', trip_id=booking.trip.id)
+
+    return render(request, 'website/payment.html')
+
+
+def payment_success(request):
+    is_authenticated = request.session.get('is_customer_authenticated', False)
+    customer_email = request.session.get('customer_email')
+    booking_id = request.session.get('booking_id')  # ID của booking đã lưu trong session
+    booking = get_object_or_404(Booking, id=booking_id)
+    seats = booking.seat.all()  # Lấy danh sách ghế đã đặt
+
+    # Cập nhật QR code và email
+    qr_data = f"Booking ID: {booking.id}, Trip: {booking.trip.id}, Seats: {[seat.name for seat in seats]}, Customer: {booking.customer_name}"
+
+    # Tạo mã QR
+    # qr_data = f"Booking ID: {booking.id}, Trip: {booking.trip.id}, Seats: {[seat.name for seat in booking.seat.all()]}, Customer: {booking.customer_name}"
+    qr_img = qrcode.make(qr_data)
+    qr_image_path = f"media/qr_codes/booking_{booking.id}.png"
+    qr_img.save(qr_image_path)
+
+    # Gửi email
+    subject = "Thông tin đặt vé xe"
+    message = f"""
+    Xin chào {booking.customer_name},
+
+    Cảm ơn bạn đã đặt vé. Dưới đây là thông tin đặt vé của bạn:
+
+    - Booking ID: {booking.id}
+    - Chuyến đi: {booking.trip.id}
+    - Ghế đã đặt: {', '.join([seat.name for seat in booking.seat.all()])}
+
+    Vui lòng xem mã QR đính kèm để xác nhận đặt vé.
+
+    Trân trọng,
+    Đội ngũ hỗ trợ khách hàng
+    """
+    send_mail(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        [customer_email],
+        fail_silently=False,
+        html_message=f"<img src='{qr_image_path}' alt='QR Code'><br>{message}"
+    )
+
+    return render(request, 'website/payment_success.html', {
+        'is_authenticated': is_authenticated,
+        'customer_email': customer_email,
+        'booking': booking,
+        'qr_image_path': qr_image_path,
+    })
+
+
+
+def schedule(request):
+    is_authenticated = request.session.get('is_customer_authenticated', False)
+    customer_email = request.session.get('customer_email')
+
+    active_trips = Trip.objects.filter(active=True)
+
+    return render(request, 'website/schedule.html', {
+        'is_authenticated': is_authenticated,
+        'customer_email': customer_email,
+        'active_trips': active_trips,
+    })
+
+
 def ticket_search(request):
-    is_authenticated = request.session.get('is_authenticated', False)
+    is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')
 
     return render(request, 'website/ticket-search.html', {
@@ -268,7 +523,7 @@ def ticket_search(request):
 
 
 def contact(request):
-    is_authenticated = request.session.get('is_authenticated', False)
+    is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')
 
     return render(request, 'website/contact.html', {
@@ -278,7 +533,7 @@ def contact(request):
 
 
 def about(request):
-    is_authenticated = request.session.get('is_authenticated', False)
+    is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')
 
     return render(request, 'website/about.html', {

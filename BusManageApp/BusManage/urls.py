@@ -27,6 +27,10 @@ urlpatterns = [
     path('logout/', views.logout_view, name="logout"),
     path('signup/', views.SignupView.as_view(), name="signup"),
     path('submit-review/', views.submit_review, name='submit_review'),
+    path('thanh-toan/', views.payment, name='payment'),
+    path('thanh-toan-thanh-cong/', views.payment_success, name='payment_success'),
+    path('thong-tin-ca-nhan/', views.profile_view, name='profile'),
+
     # path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     path('admin/', admin_site.urls),
     # path('search-trip/', views.TripViewSet.as_view({'get': 'search_trip'}), name='search-trip'),

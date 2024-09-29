@@ -53,8 +53,8 @@ class BusRoute(BaseModel):
     route_name = models.CharField(max_length=100)
     start_location = models.CharField(max_length=100)
     end_location = models.CharField(max_length=100)
-    distance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Thêm trường distance
-    bus = models.ForeignKey(Bus, on_delete=models.CASCADE, default=1)  # Thay 1 bằng ID bus bạn muốn
+    distance = models.DecimalField(max_digits=5, decimal_places=0, default=0)
+    bus = models.ForeignKey(Bus, on_delete=models.CASCADE, default=1)
 
     def __str__(self):
         return self.route_name
@@ -64,7 +64,7 @@ class Trip(BaseModel):
     bus_route = models.ForeignKey(BusRoute, on_delete=models.CASCADE)
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
-    ticket_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Thêm giá trị mặc định
+    ticket_price = models.DecimalField(max_digits=10, decimal_places=0, default=0)  # Thêm giá trị mặc định
 
     def save(self, *args, **kwargs):
         if isinstance(self.departure_time, datetime):
@@ -89,12 +89,13 @@ class TripStatistics(BaseModel):
     trip = models.OneToOneField(Trip, on_delete=models.CASCADE)  # Mỗi chuyến xe chỉ có 1 bản thống kê
     total_tickets = models.IntegerField(default=0)  # Tổng số vé
     booked_tickets = models.IntegerField(default=0)  # Số vé người dùng đã đặt
-    total_payment = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # Tổng số tiền thanh toán
+    total_payment = models.DecimalField(max_digits=12, decimal_places=0, default=0)  # Tổng số tiền thanh toán
 
     def __str__(self):
         return f"Statistics for Trip: {self.trip.bus_route.route_name} - {self.trip.departure_time}"
 
 
+# models.py
 class Booking(BaseModel):
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
@@ -123,8 +124,6 @@ class Booking(BaseModel):
     def __str__(self):
         return f"Booking for {self.customer_name} - Seat {self.seat.name} ({self.trip.bus_route.route_name})"
 
-
-from django.db import models
 
 class Review(BaseModel):
     title = models.CharField(max_length=255, default=None)  # Giới hạn độ dài tiêu đề

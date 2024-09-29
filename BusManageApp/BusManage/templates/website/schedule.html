@@ -1,6 +1,5 @@
 {% extends 'website/main.html' %}
 {% block title %}Lịch trình{% endblock %}
-{% load static %}
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 <style>
@@ -47,9 +46,6 @@
         text-align: left;
         border-bottom: 1px solid #ddd;
     }
-    /*    .custum-container th {*/
-    /*        background-color: #f9f9f9;*/
-    /*    }*/
     .custum-container .route {
         color: #ff4500;
     }
@@ -68,94 +64,62 @@
 <br>
 <div class="custum-container">
     <div class="container">
-    <div class="search-bar">
-        <input type="text" placeholder="Nhập điểm đi">
-        <i class="fas fa-exchange-alt swap-icon"></i>
-        <input type="text" placeholder="Nhập điểm đến">
+        <!-- Thanh tìm kiếm -->
+        <div class="search-bar">
+            <input type="text" id="start_location" placeholder="Nhập điểm đi">
+            <i class="fas fa-exchange-alt swap-icon"></i>
+            <input type="text" id="end_location" placeholder="Nhập điểm đến">
+        </div>
+
+        <!-- Bảng hiển thị các chuyến xe -->
+        <table id="trip_table">
+            <thead>
+            <tr>
+                <th>Tuyến xe</th>
+                <th>Loại xe</th>
+                <th>Quãng đường</th>
+                <th>Thời gian hành trình</th>
+                <th>Giá vé</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for trip in active_trips %}
+            <tr>
+                <td class="route">{{ trip.bus_route.start_location }} ⇌ {{ trip.bus_route.end_location }}</td>
+                <td>{{ trip.bus_route.bus.bus_type }}</td>
+                <td>{{ trip.bus_route.distance }} km</td>
+                <td>{{ trip.departure_time|date:"H:i d/m/Y" }} - {{ trip.arrival_time|date:"H:i d/m/Y" }}</td>
+                <td>{{ trip.ticket_price }} VNĐ</td>
+                <td>
+                    <button class="button">Tìm tuyến xe</button>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
-    <table>
-        <thead>
-        <tr>
-            <th>Tuyến xe</th>
-            <th>Loại xe</th>
-            <th>Quãng đường</th>
-            <th>Thời gian hành trình</th>
-            <th>Giá vé</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-            <td class="route">An Nhơn ⇌ TP. Hồ Chí Minh</td>
-            <td>Giường</td>
-            <td>639km</td>
-            <td>11 giờ 30 phút</td>
-            <td>---</td>
-            <td>
-                <button class="button">Tìm tuyến xe</button>
-            </td>
-        </tr>
-        <tr>
-            <td class="route">An Nhơn ⇌ TP. Hồ Chí Minh</td>
-            <td>Giường</td>
-            <td>660km</td>
-            <td>13 giờ 46 phút</td>
-            <td>---</td>
-            <td>
-                <button class="button">Tìm tuyến xe</button>
-            </td>
-        </tr>
-        <tr>
-            <td class="route">An Nhơn ⇌ TP. Hồ Chí Minh</td>
-            <td>---</td>
-            <td>627km</td>
-            <td>10 giờ 7 phút</td>
-            <td>---</td>
-            <td>
-                <button class="button">Tìm tuyến xe</button>
-            </td>
-        </tr>
-        <tr>
-            <td class="route">Bạc Liêu ⇌ TP. Hồ Chí Minh</td>
-            <td>Giường</td>
-            <td>271km</td>
-            <td>6 giờ</td>
-            <td>---</td>
-            <td>
-                <button class="button">Tìm tuyến xe</button>
-            </td>
-        </tr>
-        <tr>
-            <td class="route">Bảo Lộc ⇌ Bình Sơn</td>
-            <td>Limousine</td>
-            <td>650km</td>
-            <td>15 giờ 30 phút</td>
-            <td>---</td>
-            <td>
-                <button class="button">Tìm tuyến xe</button>
-            </td>
-        </tr>
-        <tr>
-            <td class="route">Bảo Lộc ⇌ Đà Nẵng</td>
-            <td>Giường</td>
-            <td>756km</td>
-            <td>16 giờ 38 phút</td>
-            <td>---</td>
-            <td>
-                <button class="button">Tìm tuyến xe</button>
-            </td>
-        </tr>
-        <tr>
-            <td class="route">Bảo Lộc ⇌ Huế</td>
-            <td>Giường</td>
-            <td>827km</td>
-            <td>19 giờ</td>
-            <td>---</td>
-            <td>
-                <button class="button">Tìm tuyến xe</button>
-            </td>
-        </tr>
-        </tbody>
-    </table>
 </div>
-</div>
+
+<script>
+    document.getElementById('start_location').addEventListener('input', filterTrips);
+    document.getElementById('end_location').addEventListener('input', filterTrips);
+
+    function filterTrips() {
+        const startLocationInput = document.getElementById('start_location').value.toLowerCase();
+        const endLocationInput = document.getElementById('end_location').value.toLowerCase();
+        const rows = document.querySelectorAll('#trip_table tbody tr');
+
+        rows.forEach(row => {
+            const route = row.querySelector('.route').textContent.toLowerCase();
+            const startLocation = route.split('⇌')[0].trim();
+            const endLocation = route.split('⇌')[1].trim();
+
+            if (startLocation.includes(startLocationInput) && endLocation.includes(endLocationInput)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
 {% endblock %}

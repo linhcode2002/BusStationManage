@@ -59,6 +59,39 @@
     body, h4, h5, p, a {
         color: black; /* Màu chữ đen */
     }
+
+    .seat-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr); /* 6 cột cho 36 ghế */
+        gap: 10px; /* Khoảng cách giữa các ghế */
+    }
+
+    .seat {
+        width: 40px;
+        height: 40px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        text-align: center;
+        line-height: 40px;
+        cursor: pointer;
+    }
+
+    .seat.sold {
+        background-color: #d3d3d3;
+    }
+
+    .seat.available {
+        background-color: #e6f7ff;
+    }
+
+    .seat.selected {
+        background-color: #ffe6e6;
+    }
+    .seat.sold {
+        background-color: #d3d3d3; /* Màu ghế đã đặt */
+        cursor: not-allowed; /* Hiển thị con trỏ không cho phép */
+    }
+
 </style>
 
 <br>
@@ -66,40 +99,81 @@
     <div class="row">
         <div class="col-md-8">
             <h4>Chọn ghế</h4>
-            <div class="d-flex justify-content-between mt-3">
-                <img src="{% static 'assets/images/ghe.png' %}">
-            </div>
-            <div id="seat-selection">
+            <div id="seat-selection" class="seat-grid">
                 {% for seat in seats %}
-                    <div class="seat available" data-seat="{{ seat.name }}">{{ seat.name }}</div>
+                <div class="seat {% if seat.name in booked_seats %}sold{% else %}available{% endif %}"
+                     data-seat="{{ seat.name }}" {% if seat.name in booked_seats %} style="cursor: not-allowed;" {% endif %}>{{ seat.name }}
+                </div>
                 {% endfor %}
             </div>
+            <br>
+            <p>Ghế tầng dưới: A01-A18</p>
+            <p>Ghế tầng trên: B01-B18</p>
             <p id="selected-count">Đã chọn: 0 ghế</p>
             <input type="hidden" name="selected_seats" id="selected_seats" value="">
         </div>
         <div class="col-md-4">
             <div class="info-box">
-                <h5>Thông tin lượt đi</h5>
-                <p><strong>Tuyến xe:</strong> {{ trip.bus_route.start_location }} - {{ trip.bus_route.end_location }}</p>
-                <p><strong>Thời gian xuất bến:</strong> {{ trip.departure_time }}</p>
+                <h5>Thông tin chuyến đi</h5>
+                <p><strong>Tuyến xe:</strong> {{ trip.bus_route.start_location }} - {{ trip.bus_route.end_location }}
+                </p>
+                <p><strong>Thời gian xuất bến:</strong> {{ trip.departure_time|date:"H:i d/m/Y" }}</p>
                 <p><strong>Số lượng ghế:</strong> <span id="count-seats">0</span> Ghế</p>
                 <p><strong>Số ghế:</strong> <span id="selected-seats"></span></p>
                 <p><strong>Điểm trả khách: </strong>{{ trip.bus_route.end_location }}</p>
-                <p><strong>Tổng tiền lượt đi:</strong> {{ trip.ticket_price }}đ</p>
             </div>
             <div class="info-box">
                 <h5>Chi tiết giá</h5>
-                <p><strong>Giá vé lượt đi:</strong> {{ trip.ticket_price }}đ</p>
+                <p><strong>Giá vé lượt đi:</strong> <span id="ticket-price">{{ trip.ticket_price }}</span>đ</p>
                 <p><strong>Phí thanh toán:</strong> 0đ</p>
-                <p><strong>Tổng tiền:</strong> {{ trip.ticket_price }}đ</p>
+                <p><strong>Tổng tiền:</strong> <span id="total-price">{{ trip.ticket_price }}đ</span></p>
             </div>
+            <br>
             <button id="confirm-button" class="btn btn-primary">Xác nhận chọn ghế</button>
         </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+             <h2>Thông tin khách hàng</h2>
+            <form id="booking-form">
+                <div class="form-check">
+                    <input type="checkbox" checked class="form-check-input" id="terms" name="terms" required>
+                    <label class="form-check-label terms" for="terms">Chấp nhận điều khoản đặt vé & chính sách bảo mật thông tin của FUTABusline</label>
+                </div>
+                <div class="form-group">
+                    <label for="name">Họ và tên *</label>
+                    <input type="text" id="name" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Số điện thoại *</label>
+                    <input type="text" id="phone" name="phone" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                </div>
+
+            </form>
+        </div>
+        <div class="col-md-4">
+            <div class="notes">
+                <br>
+                <h4>ĐIỀU KHOẢN & LƯU Ý</h4>
+                <p>(*) Quý khách vui lòng có mặt tại bến xuất phát của xe trước ít nhất 30 phút giờ xe khởi hành...</p>
+            </div>
+        </div>
+
     </div>
 
 </div>
 
 <script>
+    window.onload = function() {
+        const ticketPriceElement = document.getElementById('ticket-price');
+        const ticketPrice = parseFloat(ticketPriceElement.textContent); // Lấy giá trị từ thẻ và chuyển thành số
+        ticketPriceElement.textContent = ticketPrice.toLocaleString();  // Sử dụng toLocaleString() để định dạng số
+    }
+
     const seats = document.querySelectorAll('.seat');
     const selectedCount = document.getElementById('selected-count');
     const countSeats = document.getElementById('count-seats');
@@ -109,32 +183,83 @@
 
     seats.forEach(seat => {
         seat.addEventListener('click', () => {
+            if (seat.classList.contains('sold')) {
+                alert('Ghế này đã được đặt.');
+                return; // Không cho phép chọn ghế đã đặt
+            }
+
             if (seat.classList.contains('selected')) {
                 seat.classList.remove('selected');
                 selectedSeatsArray = selectedSeatsArray.filter(s => s !== seat.dataset.seat);
             } else if (selectedSeatsArray.length < 4) {
                 seat.classList.add('selected');
                 selectedSeatsArray.push(seat.dataset.seat);
+            } else {
+                alert('Bạn chỉ có thể chọn tối đa 4 ghế.');
             }
             updateSelectedCount();
         });
     });
 
+    const ticketPrice = {{ trip.ticket_price }};
     function updateSelectedCount() {
         selectedCount.textContent = `Đã chọn: ${selectedSeatsArray.length} ghế`;
         countSeats.textContent = selectedSeatsArray.length;
         selectedSeats.textContent = selectedSeatsArray.join(', ');
         selectedSeatsInput.value = selectedSeatsArray.join(',');
+        // Tính tổng tiền
+        const totalPrice = selectedSeatsArray.length * ticketPrice;
+        document.getElementById('total-price').textContent = `${totalPrice.toLocaleString()}đ`;
     }
 
     document.getElementById('confirm-button').addEventListener('click', () => {
+        const name = document.getElementById('name').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const termsChecked = document.getElementById('terms').checked;
+
         if (selectedSeatsArray.length === 0) {
             alert('Vui lòng chọn ít nhất một ghế.');
+        } else if (!name || !phone || !email) {
+            alert('Vui lòng nhập đầy đủ thông tin.');
+        } else if (!termsChecked) {
+            alert('Bạn cần chấp nhận điều khoản để tiếp tục.');
         } else {
-            // Gửi dữ liệu tới server (có thể sử dụng AJAX hoặc form submission)
-            document.querySelector('form').submit();
+            const data = {
+                selected_seats: selectedSeatsArray,
+                name: name,
+                phone: phone,
+                email: email
+            };
+
+            fetch("{% url 'booking' trip.id %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.json().then(err => {
+                        throw new Error(err.error); // Lấy thông điệp lỗi từ phản hồi
+                    });
+                }
+            })
+            .then(data => {
+                window.location.href = data.payment_url; // Chuyển hướng đến trang thanh toán
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+
         }
     });
+
+
 </script>
 
 

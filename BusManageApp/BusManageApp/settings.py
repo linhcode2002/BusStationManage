@@ -66,6 +66,16 @@ INTERNAL_IPS = [
     "127.0.0.1",
 ]
 
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Hoặc máy chủ SMTP của bạn
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'vanlinhlinhcang@gmail.com'  # Địa chỉ email của bạn
+EMAIL_HOST_PASSWORD = 'vanlinh29012002'  # Mật khẩu email của bạn
+
+# LOGIN_URL = '/login/'
+
 ROOT_URLCONF = 'BusManageApp.urls'
 
 TEMPLATES = [

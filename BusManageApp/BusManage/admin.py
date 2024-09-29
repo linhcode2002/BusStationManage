@@ -44,36 +44,40 @@ class TripInline(admin.StackedInline):
     model = Trip
     extra = 0  # Không thêm form rỗng
 
+class SeatInline(admin.StackedInline):
+    model = Booking.seats.through  # Sử dụng mối quan hệ nhiều-nhiều
+    extra = 1  # Số lượng dòng trống hiển thị
+
 # Quản lý tuyến xe
 class BusRouteAdmin(admin.ModelAdmin):
-    list_display = ['id', 'route_name', 'start_location', 'end_location', 'distance']
+    list_display = ['id', 'route_name', 'start_location', 'end_location', 'distance', 'active']
     search_fields = ['route_name', 'start_location', 'end_location']
-    list_filter = ['route_name']
+    list_filter = ['route_name', 'active']
     inlines = [TripInline]  # Gắn inline cho các chuyến xe
 
 # Quản lý chuyến xe
 class TripAdmin(admin.ModelAdmin):
-    list_display = ['id', 'bus_route', 'departure_time', 'arrival_time', 'ticket_price']
+    list_display = ['id', 'bus_route', 'departure_time', 'arrival_time', 'ticket_price', 'active']
     search_fields = ['bus_route__route_name']
-    list_filter = ['bus_route']
+    list_filter = ['bus_route', 'active']
 
 # Quản lý thống kê doanh thu
 class RevenueStatisticsAdmin(admin.ModelAdmin):
-    list_display = ['id', 'month', 'year', 'revenue', 'frequency']
+    list_display = ['id', 'month', 'year', 'revenue', 'frequency', 'active']
     search_fields = ['month', 'year']
-    list_filter = ['month', 'year']
+    list_filter = ['month', 'year', 'active']
 
 # Quản lý đánh giá
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'title', 'customer_email', 'phone_number']
+    list_display = ['id', 'name', 'title', 'customer_email', 'phone_number', 'active']
     search_fields = ['customer_email']
-    list_filter = ['name']
+    list_filter = ['name', 'active']
 
 # Quản lý thống kê chuyến xe
 class TripStatisticsAdmin(admin.ModelAdmin):
-    list_display = ['id', 'trip', 'total_tickets', 'booked_tickets', 'total_payment']
+    list_display = ['id', 'trip', 'total_tickets', 'booked_tickets', 'total_payment', 'active']
     search_fields = ['trip__bus_route__route_name']
-    list_filter = ['trip__bus_route']
+    list_filter = ['trip__bus_route', 'active']
 
 # Quản lý bến xe riêng
 class BusManageAdminSite(admin.AdminSite):
@@ -88,7 +92,7 @@ class BusManageAdminSite(admin.AdminSite):
         return TemplateResponse(request, 'admin/bus-manage-stats.html', {})
 
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'phone_number', 'email', 'address']
+    list_display = ['id', 'name', 'phone_number', 'email', 'address', 'active']
     search_fields = ['name', 'phone_number', 'email']
     list_filter = ['name', 'email']
     readonly_fields = ["image"]
@@ -107,21 +111,49 @@ class CustomerAdmin(admin.ModelAdmin):
 
 # Quản lý xe bus
 class BusAdmin(admin.ModelAdmin):
-    list_display = ['id', 'license_plate', 'total_seats', 'driver']
+    list_display = ['id', 'license_plate', 'total_seats', 'driver', 'active']
     search_fields = ['license_plate', 'driver']
-    list_filter = ['license_plate']
+    list_filter = ['license_plate', 'active']
 
 # Quản lý ghế ngồi
 class SeatAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'bus']
+    list_display = ['id', 'name', 'bus', 'active']
     search_fields = ['name', 'bus__license_plate']
-    list_filter = ['bus']
+    list_filter = ['active']
 
+class BookingAdminForm(forms.ModelForm):
+    class Meta:
+        model = Booking
+        fields = ['id', 'trip', 'customer_name', 'customer_email']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        seats = cleaned_data.get('seats')
+
+        if seats and seats.count() > 4:
+            raise forms.ValidationError("Chỉ được đặt tối đa 4 ghế.")
+
+        return cleaned_data
 # Quản lý việc đặt vé
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ['id', 'trip', 'seat', 'customer_name', 'customer_email', 'booking_time']
-    search_fields = ['customer_name', 'customer_email', 'trip__bus_route__route_name', 'seat__name']
+    form = BookingAdminForm
+    inlines = [SeatInline]
+    list_display = ['id', 'trip', 'customer_name', 'customer_email', 'booking_time', 'get_seat_names']
+    search_fields = ['customer_name', 'customer_email', 'trip__bus_route__route_name']
     list_filter = ['trip__bus_route', 'booking_time']
+
+
+    def get_seat_names(self, obj):
+        return ", ".join([seat.name for seat in obj.seats.all()])  # Hiển thị danh sách ghế
+    get_seat_names.short_description = 'Seats'  # Tiêu đề cột hiển thị trong admin
+
+    def save_model(self, request, obj, form, change):
+        # Kiểm tra số lượng ghế
+        if form.cleaned_data['seats'].count() > 4:
+            raise ValueError("Chỉ được đặt tối đa 4 ghế.")
+
+        # Lưu đối tượng
+        super().save_model(request, obj, form, change)
 
 # Tạo site quản lý riêng
 admin_site = BusManageAdminSite('mybusmanage')

@@ -1,0 +1,18 @@
+{% extends 'website/main.html' %}
+{% block title %}Thanh toán bằng MoMo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Thanh toán bằng MoMo</h2>
+    <p><strong>Tổng tiền:</strong> {{ booking.trip.ticket_price }}đ</p>
+
+    <div class="text-center">
+        <p>Quét mã QR dưới đây để thanh toán:</p>
+        <img src="{{ qr_url }}" alt="QR Code thanh toán" class="img-fluid">
+    </div>
+
+    <p class="mt-3">
+        Sau khi thanh toán, bạn sẽ được tự động chuyển hướng.
+    </p>
+</div>
+{% endblock %}

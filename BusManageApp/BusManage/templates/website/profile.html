@@ -1,6 +1,34 @@
 {% extends 'website/main.html' %}
-{% block title %}Home{% endblock %}
+{% block title %}Thông tin cá nhân{% endblock %}
 {% load static %}
-{% block content %}
 
+{% block content %}
+    <div class="container mt-4">
+        <br>
+        <h2 class="mb-4">Thông tin cá nhân</h2>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if form.instance.avatar %}
+                <div class="form-group text-center">
+                    <label>Ảnh đại diện hiện tại:</label><br>
+                    <img src="{{ form.instance.avatar.url }}" class="img-thumbnail" alt="Avatar" style="max-width: 200px; margin-top: 10px;">
+                </div>
+            {% endif %}
+            {{ form.as_p }}
+
+
+            <div class="text-center">
+                <button type="submit" name="update_profile" class="btn btn-primary">Cập nhật</button>
+            </div>
+        </form>
+        <h2 class="mt-4">Đổi mật khẩu</h2>
+        <form method="POST">
+            {% csrf_token %}
+            {{ password_form.as_p }}
+            <div class="text-center">
+                <button type="submit" name="change_password" class="btn btn-danger">Đổi mật khẩu</button>
+            </div>
+        </form>
+    </div>
+    <br>
 {% endblock %}

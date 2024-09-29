@@ -10,7 +10,6 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <style>
-    /* Giới hạn CSS chỉ áp dụng cho phần .custom-content */
     .custom-content {
         background-color: #f9f9f9;
         display: flex;
@@ -115,7 +114,6 @@
             <div class="header">
                 <div>
                     <label><input type="radio" name="trip_type" value="one_way" checked> Một chiều</label>
-                    <label><input type="radio" name="trip_type" value="round_trip"> Khứ hồi</label>
                 </div>
                 <a href="#">Hướng dẫn mua vé</a>
             </div>
@@ -221,15 +219,15 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         flatpickr("#date", {
-            dateFormat: "d/m/Y",  // Định dạng ngày thành ngày/tháng/năm
-            altInput: true,  // Hiển thị ngày ở định dạng thân thiện
-            altFormat: "d/m/Y",  // Định dạng ngày thay thế
-            locale: 'vi',  // Sử dụng ngôn ngữ tiếng Việt
-            showMonths: 1,  // Hiển thị một tháng tại một thời điểm
+            dateFormat: "d/m/Y",
+            altInput: true,
+            altFormat: "d/m/Y",
+            locale: 'vi',
+            showMonths: 1,
             onChange: function(selectedDates, dateStr, instance) {
                 let selectedDate = new Date(selectedDates);
-                let weekday = selectedDate.toLocaleDateString('vi-VN', { weekday: 'long' }); // Lấy thứ bằng tiếng Việt
-                instance.element.nextElementSibling.innerHTML = weekday; // Cập nhật thứ trong phần <small>
+                let weekday = selectedDate.toLocaleDateString('vi-VN', { weekday: 'long' });
+                instance.element.nextElementSibling.innerHTML = weekday;
             }
         });
     });
