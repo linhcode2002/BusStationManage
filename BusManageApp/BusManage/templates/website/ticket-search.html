@@ -40,17 +40,82 @@
     .custum-container button:hover {
         background-color: #e64a19;
     }
+
+    .booking-list {
+/*        max-width: 800px; *//* Đặt chiều rộng tối đa cho bảng */
+        margin: 20px auto; /* Căn giữa bảng */
+        padding: 20px;
+        background-color: #f9f9f9; /* Màu nền cho bảng */
+        border-radius: 10px; /* Bo góc cho bảng */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Đổ bóng cho bảng */
+    }
+
+    .booking-list h2 {
+        text-align: center; /* Căn giữa tiêu đề */
+    }
+
+    table {
+        width: 100%; /* Chiều rộng bảng 100% */
+        border-collapse: collapse; /* Xóa khoảng cách giữa các ô */
+    }
+
+    th, td {
+        padding: 10px;
+        text-align: left; /* Căn trái nội dung ô */
+        border-bottom: 1px solid #ddd; /* Đường viền dưới cho ô */
+    }
+
+    th {
+        background-color: #ff5722; /* Màu nền cho tiêu đề bảng */
+        color: white; /* Màu chữ cho tiêu đề bảng */
+    }
+
+    tr:hover {
+        background-color: #f1f1f1; /* Hiệu ứng hover cho hàng */
+    }
 </style>
 
+
 <div class="custum-container">
-    <h1>
-        TRA CỨU THÔNG TIN ĐẶT VÉ
-    </h1>
-    <input placeholder="Vui lòng nhập số điện thoại" type="text"/>
-    <input placeholder="Vui lòng nhập mã vé" type="text"/>
-    <button>
-        Tra cứu
-    </button>
+    <h1>TRA CỨU THÔNG TIN ĐẶT VÉ</h1>
+    <form method="POST">
+        {% csrf_token %}
+        <input name="email" placeholder="Vui lòng nhập email" type="email" required/>
+        <button type="submit">Tra cứu</button>
+    </form>
 </div>
+
+{% if bookings %}
+<div class="booking-list">
+    <h2>Danh Sách Vé Đã Đặt</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Tên Khách Hàng</th>
+                <th>Số Điện Thoại</th>
+                <th>Chuyến Xe</th>
+                <th>Ghế</th>
+                <th>Thời Gian Xuất Phát</th>
+                <th>Thời Gian Tới</th>
+                <th>Thời Gian Đặt Vé</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td>{{ booking.customer_name }}</td>
+                <td>{{ booking.customer_phone }}</td>
+                <td>{{ booking.trip.bus_route.route_name }}</td>
+                <td>{{ booking.seat.name }}</td>
+                <td>{{ booking.trip.departure_time|date:"H:i d/m/Y" }}</td>
+                <td>{{ booking.trip.arrival_time|date:"H:i d/m/Y" }}</td>
+                <td>{{ booking.booking_time|date:"H:i d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 
 {% endblock %}

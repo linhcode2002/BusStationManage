@@ -44,11 +44,6 @@ class TripInline(admin.StackedInline):
     model = Trip
     extra = 0  # Không thêm form rỗng
 
-class SeatInline(admin.StackedInline):
-    model = Booking.seats.through  # Sử dụng mối quan hệ nhiều-nhiều
-    extra = 1  # Số lượng dòng trống hiển thị
-
-# Quản lý tuyến xe
 class BusRouteAdmin(admin.ModelAdmin):
     list_display = ['id', 'route_name', 'start_location', 'end_location', 'distance', 'active']
     search_fields = ['route_name', 'start_location', 'end_location']
@@ -118,27 +113,11 @@ class BusAdmin(admin.ModelAdmin):
 # Quản lý ghế ngồi
 class SeatAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'bus', 'active']
-    search_fields = ['name', 'bus__license_plate']
+    search_fields = ['name']
     list_filter = ['active']
-
-class BookingAdminForm(forms.ModelForm):
-    class Meta:
-        model = Booking
-        fields = ['id', 'trip', 'customer_name', 'customer_email']
-
-    def clean(self):
-        cleaned_data = super().clean()
-        seats = cleaned_data.get('seats')
-
-        if seats and seats.count() > 4:
-            raise forms.ValidationError("Chỉ được đặt tối đa 4 ghế.")
-
-        return cleaned_data
 # Quản lý việc đặt vé
 class BookingAdmin(admin.ModelAdmin):
-    form = BookingAdminForm
-    inlines = [SeatInline]
-    list_display = ['id', 'trip', 'customer_name', 'customer_email', 'booking_time', 'get_seat_names']
+    list_display = ['id', 'trip', 'customer_name', 'customer_email', 'booking_time', 'seat']
     search_fields = ['customer_name', 'customer_email', 'trip__bus_route__route_name']
     list_filter = ['trip__bus_route', 'booking_time']
 

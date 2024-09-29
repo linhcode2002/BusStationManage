@@ -37,7 +37,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import render, redirect
 from .forms import CustomerProfileForm, PasswordChangeForm
-
+from django.shortcuts import render, get_object_or_404
+from .models import Trip, Seat
 # class BookingViewSet(viewsets.ModelViewSet):
 #     queryset = Booking.objects.all()
 #     serializer_class = BookingSerializer
@@ -126,11 +127,6 @@ def search_trip(request):
 
     return render(request, 'website/trip_search_results.html', context)
 
-
-from django.shortcuts import render, get_object_or_404
-from .models import Trip, Seat
-
-
 class LoginView(APIView):
     def post(self, request):
         email = request.data.get('email')
@@ -153,7 +149,6 @@ class LoginView(APIView):
         else:
             # Thông báo lỗi đăng nhập
             return Response({"message": "Mật khẩu không đúng."}, status=status.HTTP_400_BAD_REQUEST)
-
 
 class SignupView(APIView):
     def post(self, request):
@@ -188,8 +183,6 @@ class SignupView(APIView):
             # Xử lý các lỗi khác
             return Response({"message": "Có lỗi xảy ra. Vui lòng thử lại sau."},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 @login_required
 def profile_view(request):
     is_authenticated = request.session.get('is_customer_authenticated', False)
@@ -516,9 +509,15 @@ def ticket_search(request):
     is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')
 
+    bookings = []
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        bookings = Booking.objects.filter(customer_email=email).order_by('-booking_time')
+
     return render(request, 'website/ticket-search.html', {
         'is_authenticated': is_authenticated,
         'customer_email': customer_email,
+        'bookings': bookings
     })
 
 
