@@ -62,10 +62,10 @@ LOGOUT_URL = '/logout'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '474015095257-u8aes9gfpvp6av2jiu11t7k0apv72mra.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
-SOCIAL_AUTH_FACEBOOK_KEY = '556715280349011'
-SOCIAL_AUTH_FACEBOOK_SECRET = '8011582239af69ab9b5df0da8c492be7'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = ''
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ''
+SOCIAL_AUTH_FACEBOOK_KEY = ''
+SOCIAL_AUTH_FACEBOOK_SECRET = ''
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -89,8 +89,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'vanlinhlinhcang@gmail.com'
-EMAIL_HOST_PASSWORD = 'lqucadpzafntwqaw'
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
 
 
 MEDIA_URL = '/media/'
@@ -102,9 +102,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 ROOT_URLCONF = 'BusManageApp.urls'
 
-ZALOPAY_APP_ID = '553'
-ZALOPAY_KEY1 = '9phuAOYhan4urywHTh0ndEXiV3pKHr5Q'
-ZALOPAY_KEY2 = 'Iyz2habzyr7AG8SgvoBCbKwKi3UzlLi3'
+ZALOPAY_APP_ID = ''
+ZALOPAY_KEY1 = ''
+ZALOPAY_KEY2 = ''
 
 TEMPLATES = [
     {
