@@ -98,9 +98,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 ROOT_URLCONF = 'BusManageApp.urls'
 
-ZALOPAY_APP_ID = ''
-ZALOPAY_KEY1 = ''
-ZALOPAY_KEY2 = ''
 
 TEMPLATES = [
     {
