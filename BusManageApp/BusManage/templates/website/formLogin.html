@@ -34,14 +34,14 @@
                 <div class="line"></div>
 
                 <div class="media-options">
-                    <a href="#" class="field facebook">
+                    <a href="{% url 'social:begin' 'facebook' %}" class="field facebook">
                         <i class='bx bxl-facebook facebook-icon'></i>
                         <span>Đăng nhập với Facebook</span>
                     </a>
                 </div>
 
                 <div class="media-options">
-                    <a href="#" class="field google">
+                    <a href="{% url 'social:begin' 'google-oauth2' %}" class="field google" onclick="googleSignIn()">
                         <img src="{% static 'assets/images/google.png' %}" alt="" class="google-img">
                         <span>Đăng nhập với Google</span>
                     </a>
@@ -62,7 +62,8 @@
                         </div>
 
                         <div class="field input-field">
-                            <input type="password" name="confirm_password" placeholder="Xác nhận mật khẩu" class="password">
+                            <input type="password" name="confirm_password" placeholder="Xác nhận mật khẩu"
+                                   class="password">
                             <i class='bx bx-hide eye-icon'></i>
                         </div>
 
@@ -79,22 +80,24 @@
                 <div class="line"></div>
 
                 <div class="media-options">
-                    <a href="#" class="field facebook">
+                    <a href="{% url 'social:begin' 'facebook' %}" class="field facebook">
                         <i class='bx bxl-facebook facebook-icon'></i>
                         <span>Đăng nhập với Facebook</span>
                     </a>
                 </div>
 
                 <div class="media-options">
-                    <a href="#" class="field google">
+                    <a href="{% url 'social:begin' 'google-oauth2' %}" class="field google" onclick="googleSignIn()">
                         <img src="{% static 'assets/images/google.png' %}" alt="" class="google-img">
                         <span>Đăng nhập với Google</span>
                     </a>
                 </div>
+
             </div>
         </section>
     </div>
 </div>
+<script src="https://apis.google.com/js/platform.js" async defer></script>
 <script>
     document.getElementById('login-form').addEventListener('submit', function(event) {
         event.preventDefault(); // Ngăn chặn việc load lại trang
@@ -197,6 +200,45 @@
             }
         }
         return cookieValue;
+    }
+    function onSignIn(googleUser) {
+        const token = googleUser.getAuthResponse().id_token; // Lấy token từ phản hồi của Google
+
+        // Gửi token đến server
+        fetch('/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') // Lấy CSRF token nếu cần
+            },
+            body: JSON.stringify({
+                token: token // Gửi token lên server
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+            if (data.message === "Đăng nhập bằng Google thành công!") {
+                alert(data.message); // Thông báo đăng nhập thành công
+                window.location.href = '/'; // Chuyển hướng sau khi đăng nhập thành công
+            } else {
+                alert(data.message || 'Có lỗi xảy ra');
+            }
+        })
+            .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    // Hàm để gọi khi đăng nhập Google
+    function googleSignIn() {
+        gapi.load('auth2', function() {
+            auth2 = gapi.auth2.init({
+                client_id: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // Thay bằng client ID của bạn
+                cookiepolicy: 'single_host_origin'
+            });
+
+            auth2.signIn().then(onSignIn);
+        });
     }
 </script>
 

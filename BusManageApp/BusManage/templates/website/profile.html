@@ -3,14 +3,14 @@
 {% load static %}
 
 {% block content %}
-    <div class="container mt-4">
+    <div class="container mt-2">
         <br>
         <h2 class="mb-4">Thông tin cá nhân</h2>
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             {% if form.instance.avatar %}
                 <div class="form-group text-center">
-                    <label>Ảnh đại diện hiện tại:</label><br>
+                    <label>Ảnh đại diện</label><br>
                     <img src="{{ form.instance.avatar.url }}" class="img-thumbnail" alt="Avatar" style="max-width: 200px; margin-top: 10px;">
                 </div>
             {% endif %}

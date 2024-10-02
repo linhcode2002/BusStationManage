@@ -216,6 +216,7 @@
         const name = document.getElementById('name').value.trim();
         const phone = document.getElementById('phone').value.trim();
         const email = document.getElementById('email').value.trim();
+        const totalPrice = selectedSeatsArray.length * ticketPrice;
         const termsChecked = document.getElementById('terms').checked;
 
         if (selectedSeatsArray.length === 0) {
@@ -229,7 +230,8 @@
                 selected_seats: selectedSeatsArray,
                 name: name,
                 phone: phone,
-                email: email
+                email: email,
+                total_price: totalPrice
             };
 
             fetch("{% url 'booking' trip.id %}", {

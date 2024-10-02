@@ -7,6 +7,7 @@ from django.utils.html import mark_safe
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django import forms
 from django.urls import path
+from social_django.models import UserSocialAuth
 
 # Đăng ký form người dùng để quản lý thay đổi mật khẩu
 class UserAdminForm(forms.ModelForm):
@@ -117,8 +118,8 @@ class SeatAdmin(admin.ModelAdmin):
     list_filter = ['active']
 # Quản lý việc đặt vé
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ['id', 'trip', 'customer_name', 'customer_email', 'booking_time', 'seat']
-    search_fields = ['customer_name', 'customer_email', 'trip__bus_route__route_name']
+    list_display = ['id', 'trip', 'ticket_code', 'customer_name', 'customer_email', 'booking_time', 'seat']
+    search_fields = ['customer_name', 'customer_email', 'ticket_code', 'trip__bus_route__route_name']
     list_filter = ['trip__bus_route', 'booking_time']
 
 
@@ -133,6 +134,11 @@ class BookingAdmin(admin.ModelAdmin):
 
         # Lưu đối tượng
         super().save_model(request, obj, form, change)
+
+class SocialAuthAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'provider', 'uid']
+    search_fields = ['user__username', 'user__email', 'provider', 'uid']
+    list_filter = ['provider']
 
 # Tạo site quản lý riêng
 admin_site = BusManageAdminSite('mybusmanage')
@@ -150,3 +156,4 @@ admin_site.register(Customer, CustomerAdmin)
 admin_site.register(Bus, BusAdmin)
 admin_site.register(Seat, SeatAdmin)
 admin_site.register(Booking, BookingAdmin)
+admin_site.register(UserSocialAuth, SocialAuthAdmin)  # Đăng ký UserSocialAuth

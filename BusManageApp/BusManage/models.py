@@ -7,7 +7,9 @@ from django.db import models
 from django.contrib.auth.hashers import make_password
 from datetime import datetime, date, time
 from dirtyfields import DirtyFieldsMixin
-
+import random
+import string
+from django.db import models
 
 class User(AbstractUser):
     avatar = CloudinaryField('avatar', null=True, folder="avatars")
@@ -94,8 +96,6 @@ class TripStatistics(BaseModel):
     def __str__(self):
         return f"Statistics for Trip: {self.trip.bus_route.route_name} - {self.trip.departure_time}"
 
-
-# models.py
 class Booking(BaseModel):
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
@@ -103,6 +103,7 @@ class Booking(BaseModel):
     customer_name = models.CharField(max_length=50)
     customer_phone = models.CharField(max_length=10)
     booking_time = models.DateTimeField(auto_now_add=True, null=True)
+    ticket_code = models.CharField(max_length=6, unique=True, blank=True)  # Thêm trường mã vé
 
     class Meta:
         constraints = [
@@ -113,6 +114,8 @@ class Booking(BaseModel):
         ]
 
     def save(self, *args, **kwargs):
+        if not self.ticket_code:  # Kiểm tra nếu mã vé chưa có
+            self.ticket_code = self.generate_ticket_code()  # Tạo mã vé ngẫu nhiên
         super().save(*args, **kwargs)
 
         # Cập nhật thông tin thống kê của chuyến xe
@@ -121,9 +124,15 @@ class Booking(BaseModel):
         trip_stats.total_payment += self.trip.ticket_price  # Tăng tổng số tiền thanh toán
         trip_stats.save()
 
+    def generate_ticket_code(self):
+        """Hàm tạo mã vé ngẫu nhiên gồm 6 ký tự chữ và số"""
+        while True:
+            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            if not Booking.objects.filter(ticket_code=code).exists():
+                return code
+
     def __str__(self):
         return f"Booking for {self.customer_name} - Seat {self.seat.name} ({self.trip.bus_route.route_name})"
-
 
 class Review(BaseModel):
     title = models.CharField(max_length=255, default=None)  # Giới hạn độ dài tiêu đề

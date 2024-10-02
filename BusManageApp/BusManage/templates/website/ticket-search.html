@@ -42,7 +42,7 @@
     }
 
     .booking-list {
-/*        max-width: 800px; *//* Đặt chiều rộng tối đa cho bảng */
+    /*        max-width: 800px; *//* Đặt chiều rộng tối đa cho bảng */
         margin: 20px auto; /* Căn giữa bảng */
         padding: 20px;
         background-color: #f9f9f9; /* Màu nền cho bảng */
@@ -73,6 +73,11 @@
     tr:hover {
         background-color: #f1f1f1; /* Hiệu ứng hover cho hàng */
     }
+
+    .form-search{
+        display: flex;
+        flex-direction: column;
+    }
 </style>
 
 
@@ -80,8 +85,13 @@
     <h1>TRA CỨU THÔNG TIN ĐẶT VÉ</h1>
     <form method="POST">
         {% csrf_token %}
-        <input name="email" placeholder="Vui lòng nhập email" type="email" required/>
+        <div class="form-search">
+            <input name="email" placeholder="Vui lòng nhập email" type="email" required/>
+            <input name="phone_number" placeholder="Vui lòng nhập số điện thoại" type="text" required/>
+
+        </div>
         <button type="submit">Tra cứu</button>
+
     </form>
 </div>
 
@@ -90,28 +100,30 @@
     <h2>Danh Sách Vé Đã Đặt</h2>
     <table>
         <thead>
-            <tr>
-                <th>Tên Khách Hàng</th>
-                <th>Số Điện Thoại</th>
-                <th>Chuyến Xe</th>
-                <th>Ghế</th>
-                <th>Thời Gian Xuất Phát</th>
-                <th>Thời Gian Tới</th>
-                <th>Thời Gian Đặt Vé</th>
-            </tr>
+        <tr>
+            <th>Tên Khách Hàng</th>
+            <th>Mã vé</th>
+            <th>Số Điện Thoại</th>
+            <th>Chuyến Xe</th>
+            <th>Ghế</th>
+            <th>Thời Gian Xuất Phát</th>
+            <th>Thời Gian Tới</th>
+            <th>Thời Gian Đặt Vé</th>
+        </tr>
         </thead>
         <tbody>
-            {% for booking in bookings %}
-            <tr>
-                <td>{{ booking.customer_name }}</td>
-                <td>{{ booking.customer_phone }}</td>
-                <td>{{ booking.trip.bus_route.route_name }}</td>
-                <td>{{ booking.seat.name }}</td>
-                <td>{{ booking.trip.departure_time|date:"H:i d/m/Y" }}</td>
-                <td>{{ booking.trip.arrival_time|date:"H:i d/m/Y" }}</td>
-                <td>{{ booking.booking_time|date:"H:i d/m/Y" }}</td>
-            </tr>
-            {% endfor %}
+        {% for booking in bookings %}
+        <tr>
+            <td>{{ booking.customer_name }}</td>
+            <td>{{ booking.ticket_code }}</td>
+            <td>{{ booking.customer_phone }}</td>
+            <td>{{ booking.trip.bus_route.route_name }}</td>
+            <td>{{ booking.seat.name }}</td>
+            <td>{{ booking.trip.departure_time|date:"H:i d/m/Y" }}</td>
+            <td>{{ booking.trip.arrival_time|date:"H:i d/m/Y" }}</td>
+            <td>{{ booking.booking_time|date:"H:i d/m/Y" }}</td>
+        </tr>
+        {% endfor %}
         </tbody>
     </table>
 </div>

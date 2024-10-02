@@ -9,8 +9,9 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import os
 from pathlib import Path
+import django
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,7 +49,23 @@ INSTALLED_APPS = [
     'oauth2_provider',
     'drf_yasg',
     'debug_toolbar',
+    'social_django',
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',
+    'social_core.backends.facebook.FacebookOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
+LOGIN_URL = '/'
+LOGOUT_URL = '/logout'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '474015095257-u8aes9gfpvp6av2jiu11t7k0apv72mra.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+SOCIAL_AUTH_FACEBOOK_KEY = '556715280349011'
+SOCIAL_AUTH_FACEBOOK_SECRET = '8011582239af69ab9b5df0da8c492be7'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -59,7 +76,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "debug_toolbar.middleware.DebugToolbarMiddleware"
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    "social_django.middleware.SocialAuthExceptionMiddleware"
 ]
 
 INTERNAL_IPS = [
@@ -68,15 +86,25 @@ INTERNAL_IPS = [
 
 # settings.py
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # Hoặc máy chủ SMTP của bạn
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'vanlinhlinhcang@gmail.com'  # Địa chỉ email của bạn
-EMAIL_HOST_PASSWORD = 'vanlinh29012002'  # Mật khẩu email của bạn
+EMAIL_HOST_USER = 'vanlinhlinhcang@gmail.com'
+EMAIL_HOST_PASSWORD = 'lqucadpzafntwqaw'
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+
+
 
 # LOGIN_URL = '/login/'
 
 ROOT_URLCONF = 'BusManageApp.urls'
+
+ZALOPAY_APP_ID = '553'
+ZALOPAY_KEY1 = '9phuAOYhan4urywHTh0ndEXiV3pKHr5Q'
+ZALOPAY_KEY2 = 'Iyz2habzyr7AG8SgvoBCbKwKi3UzlLi3'
 
 TEMPLATES = [
     {
@@ -89,6 +117,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends'
             ],
         },
     },
@@ -178,10 +207,7 @@ JAZZMIN_SETTINGS = {
     "language_chooser": False,
 }
 
-
 WSGI_APPLICATION = 'BusManageApp.wsgi.application'
-
-
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases

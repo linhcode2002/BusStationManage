@@ -1,18 +1,43 @@
 {% extends 'website/main.html' %}
+
 {% block title %}Thanh toán thành công{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
-    <h2>Thanh toán thành công</h2>
-    <p>Cảm ơn bạn đã đặt vé, {{ customer_email }}!</p>
+    <h2 class="text-success">Thanh toán thành công</h2>
+    <p>Cảm ơn bạn đã đặt vé, <strong>{{ customer_email }}</strong>!</p>
     <p>Dưới đây là thông tin đặt vé của bạn:</p>
-    <ul>
-        <li><strong>Booking ID:</strong> {{ booking.id }}</li>
-        <li><strong>Chuyến đi:</strong> {{ booking.trip.id }}</li>
-        <li><strong>Ghế đã đặt:</strong> {{ booking.seat.all|join:", " }}</li>
+    <ul class="list-group">
+        <li class="list-group-item">
+            <strong>Mã vé:</strong> {{ booking.ticket_code }}
+        </li>
+        <li class="list-group-item">
+            <strong>Chuyến đi:</strong> {{ booking.trip.bus_route.route_name }}
+        </li>
+        <li class="list-group-item">
+            <strong>Thời gian khởi hành:</strong> {{ booking.trip.departure_time }}
+        </li>
+        <li class="list-group-item">
+            <strong>Ghế đã đặt:</strong>
+            <ul>
+                {% for seat in booking.seat.all %}
+                    <li>{{ seat.name }}</li>
+                {% endfor %}
+            </ul>
+        </li>
+        <li class="list-group-item">
+            <strong>Tên khách hàng:</strong> {{ booking.customer_name }}
+        </li>
+        <li class="list-group-item">
+            <strong>Số điện thoại:</strong> {{ booking.customer_phone }}
+        </li>
     </ul>
-    <div>
-        <h4>Mã QR của bạn:</h4>
-        <img src="{{ qr_image_path }}" alt="QR Code" class="img-fluid">
+<!--    <div class="mt-4">-->
+<!--        <h4>Mã QR của bạn:</h4>-->
+<!--        <img src="{{ qr_image_path }}" alt="QR Code" class="img-fluid">-->
+<!--    </div>-->
+    <div class="mt-4">
+        <p>Vui lòng giữ thông tin này để xác nhận đặt vé của bạn. Nếu bạn có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với chúng tôi.</p>
     </div>
 </div>
 {% endblock %}
