@@ -29,10 +29,10 @@ urlpatterns = [
     path('logout/', views.logout_view, name="logout"),
     path('signup/', views.SignupView.as_view(), name="signup"),
     path('submit-review/', views.submit_review, name='submit_review'),
-    path('thanh-toan/', views.zalo_payment, name='payment'),
+    path('thanh-toan/', views.momo_payment, name='payment'),
     path('thanh-toan-thanh-cong/', views.payment_success, name='payment_success'),
+    path('thanh-toan-that-bai/', views.some_error_page, name='some_error_page'),
     path('thong-tin-ca-nhan/', views.profile_view, name='profile'),
-    path('email/', views.send_email, name='email'),
     path('social-auth/', include('social_django.urls', namespace='social')),
 
 

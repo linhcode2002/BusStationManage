@@ -1,58 +1,35 @@
-import debug_toolbar
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites import requests
 from django.core.checks import messages
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
-from rest_framework import viewsets, permissions, generics, status
-from rest_framework.decorators import action, api_view
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-
-from . import perms
-from .models import *
-from .perms import *
-from django.db.models import Q
 from .serializer import *
-from rest_framework.response import Response
 from django.contrib.auth.hashers import check_password
-from datetime import datetime, date, timedelta
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import *
 from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
-from django.http import JsonResponse
-import json
-import requests
-import json
-import uuid
-import hashlib
-import hmac
 import qrcode
 from django.core.mail import send_mail
-from django.conf import settings
-from django.shortcuts import render, redirect
 from .forms import CustomerProfileForm, PasswordChangeForm
 from django.shortcuts import render, get_object_or_404
 from .models import Trip, Seat
-import requests
-import json
-import hashlib
-import hmac
-import base64
-from django.http import JsonResponse
 from django.shortcuts import redirect
-from django.conf import settings
 from datetime import datetime
 from django.conf import settings
-import json
-import requests
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+import os
+import json
+import uuid
+import hmac
+import hashlib
+import requests
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 def search_trip(request):
     departure = request.GET.get('departure')
@@ -304,7 +281,6 @@ def booking(request, trip_id):
     booked_seats = Booking.objects.filter(trip=trip).values_list('seat__name', flat=True)
     seats.reverse()
 
-    # Đặt giá trị mặc định cho total_price
     total_price = 0  # Giá trị mặc định nếu không có POST request
 
     if request.method == 'POST':
@@ -313,11 +289,13 @@ def booking(request, trip_id):
         customer_name = data['name']
         customer_phone = data['phone']
         customer_email = data['email']
-        total_price = data.get('total_price', 0)  # Lấy total_price từ request body nếu có
+        total_price = data.get('total_price', 0)
 
         if len(selected_seats) == 0:
             messages.error(request, "Vui lòng chọn ít nhất một ghế.")
             return JsonResponse({'error': 'No seats selected'})
+
+        booking_ids = []  # Danh sách lưu ID của tất cả booking
 
         for seat_name in selected_seats:
             if seat_name in booked_seats:
@@ -326,7 +304,7 @@ def booking(request, trip_id):
 
             seat = get_object_or_404(Seat, name=seat_name)
 
-            # Tạo booking và gán vào biến booking
+            # Tạo booking và thêm vào danh sách booking_ids
             booking = Booking.objects.create(
                 trip=trip,
                 seat=seat,
@@ -334,14 +312,15 @@ def booking(request, trip_id):
                 customer_phone=customer_phone,
                 customer_email=customer_email
             )
+            booking_ids.append(booking.id)  # Thêm booking ID vào danh sách
 
-            # Lưu booking_id vào session
-            request.session['booking_id'] = booking.id
+        request.session['booking_ids'] = booking_ids  # Lưu danh sách booking_id vào session
+        request.session['total_price'] = total_price  # Lưu tổng giá tiền vào session
+        request.session['booking_name'] = customer_name
 
         payment_url = reverse('payment_success')  # URL thanh toán
         return JsonResponse({'payment_url': payment_url})
 
-    # Trả về `render` với giá trị `total_price` mặc định (nếu không có POST request)
     return render(request, 'website/booking.html', {
         'trip': trip,
         'seats': seats,
@@ -350,179 +329,271 @@ def booking(request, trip_id):
         'customer_email': customer_email,
         'amount': total_price  # Sử dụng giá trị mặc định
     })
+
 import logging
 
 logger = logging.getLogger(__name__)
 
-def zalo_payment(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        customer_name = data['name']
-        customer_phone = data['phone']
-        customer_email = data['email']
-        total_amount = data['amount']  # Số tiền thanh toán (tính theo đơn vị VNĐ)
-        logger.info("Customer Name: %s", customer_name)
-        logger.info("Customer Phone: %s", customer_phone)
-        logger.info("Customer Email: %s", customer_email)
-        logger.info("Total Amount: %s", total_amount)
-        # ZaloPay endpoint và thông tin tích hợp
-        endpoint = "https://sandbox.zalopay.com.vn/v001/tpe/createorder"  # Dùng môi trường test của ZaloPay
-        app_id = settings.ZALOPAY_APP_ID
-        key1 = settings.ZALOPAY_KEY1
-        key2 = settings.ZALOPAY_KEY2
-        order_info = "Thanh toán vé xe"
-        redirect_url = "https://127.0.0.1:8000/thanh-toan-thanh-cong"
-        ipn_url = "https://127.0.0.1:8000/ayment-ipn"
-        amount = str(total_amount)
-        order_id = str(int(datetime.timestamp(datetime.now())))  # ID đơn hàng duy nhất
-        app_trans_id = f"{datetime.now():%y%m%d}_{order_id}"  # Mã giao dịch ứng dụng
-        embed_data = ""
-        item = json.dumps([{'name': 'Vé xe', 'amount': total_amount}])
-
-        # Tạo chữ ký (signature) cho ZaloPay
-        raw_data = f"{app_id}|{app_trans_id}|{amount}|{ipn_url}|{key1}"
-        signature = hmac.new(bytes(key1, 'utf-8'), bytes(raw_data, 'utf-8'), hashlib.sha256).hexdigest()
-
-        # Payload gửi tới ZaloPay
-        payload = {
-            'app_id': app_id,
-            'app_trans_id': app_trans_id,
-            'app_user': customer_email,  # Email của người dùng
-            'amount': amount,
-            'app_time': int(datetime.now().timestamp() * 1000),  # Thời gian tạo đơn hàng
-            'item': item,
-            'embed_data': embed_data,
-            'description': order_info,
-            'bank_code': '',  # Mã ngân hàng nếu có (có thể để trống)
-            'mac': signature,  # Chữ ký
-            'callback_url': ipn_url  # URL để ZaloPay gửi thông báo
-        }
-
-        # Gửi yêu cầu POST tới ZaloPay
-        response = requests.post(endpoint, json=payload)
-        response_data = response.json()
-
-        # Kiểm tra phản hồi từ ZaloPay
-        if response_data.get('order_url'):
-            return JsonResponse({'payUrl': response_data['order_url']})
-        else:
-            return JsonResponse({'error': response_data.get('message', 'Could not create payment request')})
-
-    return JsonResponse({'error': 'Invalid request method'})
-
-
-# @csrf_exempt  # Bỏ qua xác thực CSRF cho IPN
-# def payment_ipn(request):
+# def zalo_payment(request):
 #     if request.method == 'POST':
 #         data = json.loads(request.body)
+#         customer_name = data['name']
+#         customer_phone = data['phone']
+#         customer_email = data['email']
+#         total_amount = data['amount']  # Số tiền thanh toán (tính theo đơn vị VNĐ)
+#         logger.info("Customer Name: %s", customer_name)
+#         logger.info("Customer Phone: %s", customer_phone)
+#         logger.info("Customer Email: %s", customer_email)
+#         logger.info("Total Amount: %s", total_amount)
+#         # ZaloPay endpoint và thông tin tích hợp
+#         endpoint = "https://sandbox.zalopay.com.vn/v001/tpe/createorder"  # Dùng môi trường test của ZaloPay
+#         app_id = settings.ZALOPAY_APP_ID
+#         key1 = settings.ZALOPAY_KEY1
+#         key2 = settings.ZALOPAY_KEY2
+#         order_info = "Thanh toán vé xe"
+#         redirect_url = "https://127.0.0.1:8000/thanh-toan-thanh-cong"
+#         ipn_url = "https://127.0.0.1:8000/ayment-ipn"
+#         amount = str(total_amount)
+#         order_id = str(int(datetime.timestamp(datetime.now())))  # ID đơn hàng duy nhất
+#         app_trans_id = f"{datetime.now():%y%m%d}_{order_id}"  # Mã giao dịch ứng dụng
+#         embed_data = ""
+#         item = json.dumps([{'name': 'Vé xe', 'amount': total_amount}])
 #
-#         # Lấy thông tin từ dữ liệu nhận được
-#         order_id = data.get('order_id')
-#         transaction_status = data.get('transaction_status')
+#         # Tạo chữ ký (signature) cho ZaloPay
+#         raw_data = f"{app_id}|{app_trans_id}|{amount}|{ipn_url}|{key1}"
+#         signature = hmac.new(bytes(key1, 'utf-8'), bytes(raw_data, 'utf-8'), hashlib.sha256).hexdigest()
 #
-#         # Kiểm tra và cập nhật trạng thái đơn hàng trong cơ sở dữ liệu
-#         try:
-#             # Tìm kiếm booking dựa trên order_id
-#             booking = Booking.objects.get(app_trans_id=order_id)  # app_trans_id là trường chứa ID giao dịch
+#         # Payload gửi tới ZaloPay
+#         payload = {
+#             'app_id': app_id,
+#             'app_trans_id': app_trans_id,
+#             'app_user': customer_email,  # Email của người dùng
+#             'amount': amount,
+#             'app_time': int(datetime.now().timestamp() * 1000),  # Thời gian tạo đơn hàng
+#             'item': item,
+#             'embed_data': embed_data,
+#             'description': order_info,
+#             'bank_code': '',  # Mã ngân hàng nếu có (có thể để trống)
+#             'mac': signature,  # Chữ ký
+#             'callback_url': ipn_url  # URL để ZaloPay gửi thông báo
+#         }
 #
-#             if transaction_status == 'success':
-#                 # Cập nhật trạng thái đơn hàng thành công
-#                 booking.status = 'completed'  # Hoặc giá trị phù hợp với trạng thái thành công
-#                 booking.paid_at = timezone.now()  # Cập nhật thời gian thanh toán
-#                 booking.save()
+#         # Gửi yêu cầu POST tới ZaloPay
+#         response = requests.post(endpoint, json=payload)
+#         response_data = response.json()
 #
-#                 return JsonResponse({'status': 'success', 'message': 'Payment successful'})
-#
-#             elif transaction_status == 'failed':
-#                 # Cập nhật trạng thái đơn hàng thất bại
-#                 booking.status = 'failed'  # Hoặc giá trị phù hợp với trạng thái thất bại
-#                 booking.save()
-#
-#                 return JsonResponse({'status': 'failed', 'message': 'Payment failed'})
-#
-#             else:
-#                 return JsonResponse({'status': 'error', 'message': 'Unknown transaction status'})
-#
-#         except Booking.DoesNotExist:
-#             return JsonResponse({'status': 'error', 'message': 'Booking not found'})
+#         # Kiểm tra phản hồi từ ZaloPay
+#         if response_data.get('order_url'):
+#             return JsonResponse({'payUrl': response_data['order_url']})
+#         else:
+#             return JsonResponse({'error': response_data.get('message', 'Could not create payment request')})
 #
 #     return JsonResponse({'error': 'Invalid request method'})
 
-import os
+def zalo_payment(request):
+    total_amount = 50000  # 50,000 VND
+    customer_email = 'test@example.com'  # Customer email
+
+    endpoint = "https://sandbox.zalopay.com.vn/v001/tpe/createorder"
+    app_id = settings.ZALOPAY_APP_ID
+    key1 = settings.ZALOPAY_KEY1
+    key2 = settings.ZALOPAY_KEY2
+    order_info = "Thanh toán vé xe"
+    redirect_url = "https://127.0.0.1:8000/thanh-toan-thanh-cong"
+    amount = str(total_amount)
+    order_id = str(int(datetime.timestamp(datetime.now())))
+    app_trans_id = f"{datetime.now():%y%m%d}_{order_id}"
+    item = json.dumps([{'name': 'Vé xe', 'amount': total_amount}])
+
+    # Create signature
+    raw_data = f"{app_id}|{app_trans_id}|{amount}|{redirect_url}|{key1}"
+    signature = hmac.new(bytes(key1, 'utf-8'), bytes(raw_data, 'utf-8'), hashlib.sha256).hexdigest()
+
+    # Print for debugging
+    print("Raw data for signature:", raw_data)
+    print("Signature:", signature)
+
+    # Payload sent to ZaloPay
+    payload = {
+        'app_id': app_id,
+        'app_trans_id': app_trans_id,
+        'app_user': customer_email,
+        'amount': amount,
+        'app_time': int(datetime.now().timestamp() * 1000),
+        'item': item,
+        'embed_data': json.dumps({}),
+        'description': order_info,
+        'mac': signature  # Signature
+    }
+
+    print("Payload:", payload)
+
+    # Send POST request to ZaloPay
+    response = requests.post(endpoint, json=payload)
+
+    # Print HTTP status code and response text
+    print("HTTP Status Code:", response.status_code)
+    print("Raw Response Text:", response.text)
+
+    # Check if response is JSON
+    try:
+        response_data = response.json()
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Response is not JSON', 'raw_response': response.text})
+
+    # Check response from ZaloPay
+    if response_data.get('returncode') == 0:
+        return JsonResponse({'payUrl': response_data['orderurl']})
+    else:
+        error_message = response_data.get('returnmessage', 'Could not create payment request')
+        return JsonResponse({'error': error_message})
+
+
+
+@csrf_exempt
+def momo_payment(request):
+    # Kiểm tra xem thông tin đặt vé đã có trong session chưa
+    total_price = request.session.get('total_price')
+    if total_price is None:
+        return JsonResponse({'error': 'No booking information available'}, status=400)
+
+    # parameters send to MoMo get payUrl
+    endpoint = "https://test-payment.momo.vn/v2/gateway/api/create"
+    partnerCode = "MOMO"
+    accessKey = "F8BBA842ECF85"
+    secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
+    orderInfo = "pay with MoMo"
+    # Thay đổi redirectUrl để điều hướng đến trang payment_success của bạn
+    redirectUrl = "http://127.0.0.1:8000/thanh-toan-thanh-cong/"  # Thay bằng URL thật của bạn
+    ipnUrl = "https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b"
+    amount = str(total_price)  # Sử dụng tổng giá tiền đã lưu trong session
+    orderId = str(uuid.uuid4())
+    requestId = str(uuid.uuid4())
+    requestType = "captureWallet"
+    extraData = ""  # pass empty value or Encode base64 JsonString
+
+    # before sign HMAC SHA256 with format: accessKey=$accessKey&amount=$amount&extraData=$extraData&ipnUrl=$ipnUrl
+    # &orderId=$orderId&orderInfo=$orderInfo&partnerCode=$partnerCode&redirectUrl=$redirectUrl&requestId=$requestId
+    # &requestType=$requestType
+    rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType
+
+    # puts raw signature
+    print("--------------------RAW SIGNATURE----------------")
+    print(rawSignature)
+    # signature
+    h = hmac.new(bytes(secretKey, 'ascii'), bytes(rawSignature, 'ascii'), hashlib.sha256)
+    signature = h.hexdigest()
+    print("--------------------SIGNATURE----------------")
+    print(signature)
+
+    # json object send to MoMo endpoint
+    data = {
+        'partnerCode': partnerCode,
+        'partnerName': "Test",
+        'storeId': "MomoTestStore",
+        'requestId': requestId,
+        'amount': amount,
+        'orderId': orderId,
+        'orderInfo': orderInfo,
+        'redirectUrl': redirectUrl,
+        'ipnUrl': ipnUrl,
+        'lang': "vi",
+        'extraData': extraData,
+        'requestType': requestType,
+        'signature': signature
+    }
+    print("--------------------JSON REQUEST----------------\n")
+    data = json.dumps(data)
+    print(data)
+
+    clen = len(data)
+    response = requests.post(endpoint, data=data,
+                             headers={'Content-Type': 'application/json', 'Content-Length': str(clen)})
+
+    # In kết quả trả về
+    print("--------------------JSON response----------------\n")
+    print(response.json())
+
+    # Lấy URL thanh toán từ phản hồi
+    payment_url = response.json().get('payUrl')
+    print(payment_url)
+    # Chuyển hướng đến payment_url
+    return HttpResponseRedirect(payment_url)
 
 def payment_success(request):
     is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')
-    booking_id = request.session.get('booking_id')  # Lấy booking_id từ session
-    booking = get_object_or_404(Booking, id=booking_id)
+    booking_ids = request.session.get('booking_ids')
+    booking_name = request.session.get('booking_name')
 
-    # Chỉ lấy một ghế cho mỗi booking vì mỗi booking tương ứng với một ghế
-    seat = booking.seat  # Chỉ một ghế thay vì dùng `.all()`
+    if not booking_ids:
+        return redirect('some_error_page')  # Chuyển hướng nếu không có booking_ids
 
-    # # Tạo dữ liệu QR
-    # qr_data = f"Booking ID: {booking.id}, Trip: {booking.trip.id}, Seat: {seat.name}, Customer: {booking.customer_name}"
+    bookings = Booking.objects.filter(id__in=booking_ids)  # Lấy tất cả booking theo ID
 
-    # Tạo thư mục nếu chưa tồn tại
-    # qr_code_dir = 'media/qr_codes/'
-    # os.makedirs(qr_code_dir, exist_ok=True)
+    # Tạo dữ liệu QR cho từng booking
+    qr_code_paths = []
+    messages = []
 
-    # # Tạo mã QR
-    # qr_image_path = f"{qr_code_dir}booking_{booking.id}.png"
-    # qr_img = qrcode.make(qr_data)
-    # qr_img.save(qr_image_path)
+    for booking in bookings:
+        seat = booking.seat
+        qr_data = f"Booking ID: {booking.id}, Trip: {booking.trip.id}, Seat: {seat.name}, Customer: {booking.customer_name}"
 
-    subject = "Thông tin đặt vé xe"
-    message = f"""
-    Xin chào {booking.customer_name},
+        qr_code_dir = 'media/qr_codes/'
+        os.makedirs(qr_code_dir, exist_ok=True)
 
-    Cảm ơn bạn đã đặt vé. Dưới đây là thông tin đặt vé của bạn:
+        qr_image_path = f"{qr_code_dir}booking_{booking.id}.png"
+        qr_img = qrcode.make(qr_data)
+        qr_img.save(qr_image_path)
 
-    - Mã vé: {booking.ticket_code}
-    - Chuyến đi: {booking.trip.bus_route.route_name}
-    - Thời gian khởi hành: {booking.trip.departure_time}
-    - Ghế đã đặt: {seat.name}
-    - Tên khách hàng: {booking.customer_name}
-    - Số điện thoại: {booking.customer_phone}
-    - Thời gian đặt vé: {booking.booking_time.strftime('%Y-%m-%d %H:%M:%S')}
+        qr_code_paths.append(qr_image_path)  # Thêm đường dẫn mã QR vào danh sách
 
-    Vui lòng giữ thông tin này để xác nhận đặt vé của bạn. Nếu bạn có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với chúng tôi.
+        # Tạo nội dung email cho mỗi booking
+        subject = "Thông tin đặt vé xe"
+        message = f"""
+        Xin chào {booking.customer_name},
 
-    Trân trọng,
-    Đội ngũ hỗ trợ khách hàng
-    """
-    send_mail(
-        subject,
-        message,
-        settings.EMAIL_HOST_USER,
-        [booking.customer_email],
-        fail_silently=False,
-        # html_message=f"<p>{message}</p><br><img src='{qr_image_path}' alt='QR Code'>"
-    )
+        Cảm ơn bạn đã đặt vé. Dưới đây là thông tin đặt vé của bạn:
 
-    return render(request, 'website/payment_success.html', {
-        'is_authenticated': is_authenticated,
-        'customer_email': customer_email,
-        'booking': booking,
-        # 'qr_image_path': qr_image_path,
-    })
+        - Mã vé: {booking.ticket_code}
+        - Chuyến đi: {booking.trip.bus_route.route_name}
+        - Thời gian khởi hành: {booking.trip.departure_time}
+        - Ghế đã đặt: {seat.name}
+        - Tên khách hàng: {booking.customer_name}
+        - Số điện thoại: {booking.customer_phone}
+        - Thời gian đặt vé: {booking.booking_time.strftime('%Y-%m-%d %H:%M:%S')}
 
-def send_email(request):
-    subject = "Tiêu đề email"
-    message = "Nội dung email"
-    recipient_list = ['linhho.linhcangfc@gmail.com']  # Đảm bảo là một danh sách
+        Vui lòng giữ thông tin này để xác nhận đặt vé của bạn. Nếu bạn có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với chúng tôi.
 
-    try:
+        Trân trọng,
+        Đội ngũ hỗ trợ khách hàng
+        """
+
+        # Gửi email cho mỗi booking
         send_mail(
             subject,
             message,
             settings.EMAIL_HOST_USER,
-            recipient_list,  # Đây phải là một danh sách hoặc tuple
+            [booking.customer_email],
             fail_silently=False,
         )
-        return render(request, 'website/test_email.html', {'message': 'Email đã được gửi thành công!'})
-    except Exception as e:
-        return render(request, 'website/test_email.html', {'message': f'Có lỗi xảy ra: {e}'})
 
+    return render(request, 'website/payment_success.html', {
+        'is_authenticated': is_authenticated,
+        'customer_email': customer_email,
+        'booking_name': booking_name,
+        'bookings': bookings,
+        # 'qr_code_paths': qr_code_paths,  # Truyền đường dẫn mã QR vào template
+    })
+
+def some_error_page(request):
+    is_authenticated = request.session.get('is_customer_authenticated', False)
+    customer_email = request.session.get('customer_email')
+
+    return render(request, 'website/some_error_page.html', {
+        'is_authenticated': is_authenticated,
+        'customer_email': customer_email,
+    })
 def schedule(request):
     is_authenticated = request.session.get('is_customer_authenticated', False)
     customer_email = request.session.get('customer_email')

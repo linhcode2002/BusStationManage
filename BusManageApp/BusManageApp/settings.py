@@ -72,7 +72,7 @@ MIDDLEWARE = [
     'BusManage.middleware.CacheControlMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -102,9 +102,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 ROOT_URLCONF = 'BusManageApp.urls'
 
-ZALOPAY_APP_ID = '553'
-ZALOPAY_KEY1 = '9phuAOYhan4urywHTh0ndEXiV3pKHr5Q'
-ZALOPAY_KEY2 = 'Iyz2habzyr7AG8SgvoBCbKwKi3UzlLi3'
+ZALOPAY_APP_ID = '554'
+ZALOPAY_KEY1 = '8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn'
+ZALOPAY_KEY2 = 'uUfsWgfLkRLzq6W2uNXTCxrfxs51auny'
 
 TEMPLATES = [
     {

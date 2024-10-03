@@ -5,37 +5,23 @@
 {% block content %}
 <div class="container mt-4">
     <h2 class="text-success">Thanh toán thành công</h2>
-    <p>Cảm ơn bạn đã đặt vé, <strong>{{ customer_email }}</strong>!</p>
+    <p>Cảm ơn bạn đã đặt vé, <strong>{{ booking_name }}</strong>!</p>
     <p>Dưới đây là thông tin đặt vé của bạn:</p>
-    <ul class="list-group">
-        <li class="list-group-item">
-            <strong>Mã vé:</strong> {{ booking.ticket_code }}
-        </li>
-        <li class="list-group-item">
-            <strong>Chuyến đi:</strong> {{ booking.trip.bus_route.route_name }}
-        </li>
-        <li class="list-group-item">
-            <strong>Thời gian khởi hành:</strong> {{ booking.trip.departure_time }}
-        </li>
-        <li class="list-group-item">
+    <div class="list-group">
+        {% for booking in bookings %}
+        <div class="list-group-item">
+            <strong>Mã vé:</strong> {{ booking.ticket_code }}<br>
+            <strong>Chuyến đi:</strong> {{ booking.trip.bus_route.route_name }}<br>
+            <strong>Thời gian khởi hành:</strong> {{ booking.trip.departure_time }}<br>
             <strong>Ghế đã đặt:</strong>
             <ul>
-                {% for seat in booking.seat.all %}
-                    <li>{{ seat.name }}</li>
-                {% endfor %}
+                <li>{{ booking.seat.name }}</li>  <!-- Mỗi booking chỉ có một ghế, nếu nhiều ghế thì cần điều chỉnh cách lưu dữ liệu -->
             </ul>
-        </li>
-        <li class="list-group-item">
-            <strong>Tên khách hàng:</strong> {{ booking.customer_name }}
-        </li>
-        <li class="list-group-item">
-            <strong>Số điện thoại:</strong> {{ booking.customer_phone }}
-        </li>
-    </ul>
-<!--    <div class="mt-4">-->
-<!--        <h4>Mã QR của bạn:</h4>-->
-<!--        <img src="{{ qr_image_path }}" alt="QR Code" class="img-fluid">-->
-<!--    </div>-->
+            <strong>Tên khách hàng:</strong> {{ booking.customer_name }}<br>
+            <strong>Số điện thoại:</strong> {{ booking.customer_phone }}<br>
+        </div>
+        {% endfor %}
+    </div>
     <div class="mt-4">
         <p>Vui lòng giữ thông tin này để xác nhận đặt vé của bạn. Nếu bạn có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với chúng tôi.</p>
     </div>

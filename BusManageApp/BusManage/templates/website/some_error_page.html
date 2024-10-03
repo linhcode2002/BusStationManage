@@ -1,0 +1,42 @@
+{% extends 'website/main.html' %}
+
+{% block title %}Thanh toán thất bại{% endblock %}
+
+{% block content %}
+<style>
+    /* Định dạng cho tiêu đề */
+    h1 {
+        color: red;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    /* Định dạng cho đoạn văn */
+    p {
+        text-align: center;
+        margin: 20px;
+        font-size: 16px;
+    }
+
+    /* Định dạng cho nút */
+    .btn {
+        display: block;
+        width: 200px;
+        margin: 0 auto;
+        padding: 10px;
+        background-color: blue;
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 5px;
+    }
+
+    .btn:hover {
+        background-color: darkblue;
+    }
+</style>
+
+    <h1>Thanh toán thất bại</h1>
+    <p>Rất tiếc, quá trình thanh toán của bạn đã không thành công. Vui lòng thử lại hoặc liên hệ với chúng tôi để được hỗ trợ.</p>
+    <a href="/" class="btn">Quay về trang chủ</a>
+{% endblock %}
