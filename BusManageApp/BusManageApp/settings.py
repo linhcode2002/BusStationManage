@@ -72,7 +72,7 @@ MIDDLEWARE = [
     'BusManage.middleware.CacheControlMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -127,7 +127,7 @@ JAZZMIN_SETTINGS = {
     "site_title": "Bus Management Admin",
     "site_header": "Bus Management",
     "site_brand": "Bus Management",
-    "site_logo": "bus/img/logo.png",  # Đường dẫn tới logo của bạn
+    # "site_logo": "bus/img/logo.png",
     "login_logo": None,
     "login_logo_dark": None,
     "site_logo_classes": "img-circle",
