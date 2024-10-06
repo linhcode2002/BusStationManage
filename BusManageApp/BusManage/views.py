@@ -318,7 +318,7 @@ def booking(request, trip_id):
         request.session['total_price'] = total_price  # Lưu tổng giá tiền vào session
         request.session['booking_name'] = customer_name
 
-        payment_url = reverse('payment_success')  # URL thanh toán
+        payment_url = reverse('payment')  # URL thanh toán
         return JsonResponse({'payment_url': payment_url})
 
     return render(request, 'website/booking.html', {
