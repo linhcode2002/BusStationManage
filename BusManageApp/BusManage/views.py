@@ -318,7 +318,7 @@ def booking(request, trip_id):
         request.session['total_price'] = total_price  # Lưu tổng giá tiền vào session
         request.session['booking_name'] = customer_name
 
-        payment_url = reverse('payment')  # URL thanh toán
+        payment_url = reverse('payment_success')  # URL thanh toán
         return JsonResponse({'payment_url': payment_url})
 
     return render(request, 'website/booking.html', {
@@ -514,6 +514,10 @@ def momo_payment(request):
     print("--------------------JSON response----------------\n")
     print(response.json())
 
+    try:
+        response_data = response.json()
+    except ValueError:
+        return JsonResponse({'error': 'Invalid response from MoMo'}, status=500)
     # Lấy URL thanh toán từ phản hồi
     payment_url = response.json().get('payUrl')
     print(payment_url)
