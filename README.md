@@ -12,3 +12,7 @@ python manage.py migrate
 Data: Run file bus_manage.sql
 
 python .\manage.py runserver 
+
+Admin account:
+    user: admin
+    pass: 123
